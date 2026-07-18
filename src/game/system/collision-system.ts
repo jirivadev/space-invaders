@@ -1,30 +1,18 @@
-import type { GameState, GameCallbacks } from '../types';
+import type { GameState, Bullet, Shield, Alien, Player, PowerUp, UFO } from '../types';
 import { COLORS } from '../config';
+import { rectsOverlap } from '../geometry';
 import {
-  rectsOverlap,
   createExplosionParticles,
   createImpactFlash
 } from './entity-factory';
 
 export class CollisionSystem {
-  checkBulletShieldCollision(bullet: any, shields: any[]): boolean {
-    for (const shield of shields) {
-      const shieldRect = { x: shield.x, y: shield.y, w: shield.cols * shield.pixelSize, h: shield.rows * shield.pixelSize };
-      if (!rectsOverlap(bullet, shieldRect)) return false;
-
-      if (rectsOverlap(bullet, shieldRect)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  checkBulletPlayerCollision(bullet: any, player: any): boolean {
+  checkBulletPlayerCollision(bullet: Bullet, player: Player): boolean {
     if (player.invulnerable > 0) return false;
     return rectsOverlap(bullet, player);
   }
 
-  checkBulletAlienCollision(bullet: any, alien: any, state: GameState): boolean {
+  checkBulletAlienCollision(bullet: Bullet, alien: Alien, state: GameState): boolean {
     if (!alien.alive) return false;
     if (!rectsOverlap(bullet, alien)) return false;
 
@@ -49,7 +37,7 @@ export class CollisionSystem {
     return true;
   }
 
-  checkBulletUFOCollision(bullet: any, ufo: any, state: GameState): boolean {
+  checkBulletUFOCollision(bullet: Bullet, ufo: UFO, state: GameState): boolean {
     if (!ufo) return false;
     if (!rectsOverlap(bullet, ufo)) return false;
 
@@ -60,33 +48,25 @@ export class CollisionSystem {
     return true;
   }
 
-  checkPlayerBulletShield(bullet: any, shield: any, state: GameState): boolean {
+  checkPlayerBulletShield(bullet: Bullet, shield: Shield, state: GameState): boolean {
     const shieldRect = { x: shield.x, y: shield.y, w: shield.cols * shield.pixelSize, h: shield.rows * shield.pixelSize };
     if (!rectsOverlap(bullet, shieldRect)) return false;
 
-    if (rectsOverlap(bullet, shieldRect)) {
-      state.particles.push(...createExplosionParticles(bullet.x + bullet.w / 2, bullet.y + bullet.h / 2, COLORS.shield, 4));
-      state.particles.push(createImpactFlash(bullet.x + bullet.w / 2, bullet.y + bullet.h / 2, '#86efac', 10));
-      return true;
-    }
-    return false;
+    state.particles.push(...createExplosionParticles(bullet.x + bullet.w / 2, bullet.y + bullet.h / 2, COLORS.shield, 4));
+    state.particles.push(createImpactFlash(bullet.x + bullet.w / 2, bullet.y + bullet.h / 2, '#86efac', 10));
+    return true;
   }
 
-  checkPlayerAlienCollision(alien: any, player: any, state: GameState): boolean {
-    if (!alien.alive) return false;
-    return rectsOverlap(alien, player);
-  }
-
-  checkPowerUpCollision(powerUp: any, player: any): boolean {
+  checkPowerUpCollision(powerUp: PowerUp, player: Player): boolean {
     return rectsOverlap(powerUp, player);
   }
 
-  applyPowerUps(state: GameState): void {
+  applyPowerUps(state: GameState, dt: number): void {
     if (state.activePowerUps.rapidFire > 0) {
-      state.activePowerUps.rapidFire = Math.max(0, state.activePowerUps.rapidFire - 1);
+      state.activePowerUps.rapidFire = Math.max(0, state.activePowerUps.rapidFire - dt);
     }
     if (state.activePowerUps.shield > 0) {
-      state.activePowerUps.shield = Math.max(0, state.activePowerUps.shield - 1);
+      state.activePowerUps.shield = Math.max(0, state.activePowerUps.shield - dt);
     }
   }
 }

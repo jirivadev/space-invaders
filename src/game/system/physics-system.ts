@@ -1,11 +1,14 @@
 import type { GameState } from '../types';
-import { GAME_CONFIG } from '../config';
-import { UFO_TIMER_MIN, UFO_TIMER_RANGE } from '../constants';
-import { rectsOverlap, createUFO, createPowerUp, createExplosionParticles, createImpactFlash, damageShieldRect, setGameOver } from './entity-factory';
+import { GAME_CONFIG, COLORS, UFO_TIMER_MIN, UFO_TIMER_RANGE } from '../config';
+import { rectsOverlap } from '../geometry';
+import { createUFO, createExplosionParticles, damageShieldRect } from './entity-factory';
+import { setGameOver } from './state-manager';
 
 export class PhysicsSystem {
   private shakeIntensity: number = 0;
   private shakeDuration: number = 0;
+  private shakeOffsetX: number = 0;
+  private shakeOffsetY: number = 0;
 
   triggerShake(intensity: number, duration: number) {
     this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
@@ -16,10 +19,17 @@ export class PhysicsSystem {
     if (this.shakeDuration > 0) {
       this.shakeDuration -= dt;
       this.shakeIntensity *= Math.pow(0.9, dt / GAME_CONFIG.canvas.targetDt);
+      this.shakeOffsetX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+      this.shakeOffsetY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
       if (this.shakeDuration <= 0 || this.shakeIntensity < 0.1) {
         this.shakeDuration = 0;
         this.shakeIntensity = 0;
+        this.shakeOffsetX = 0;
+        this.shakeOffsetY = 0;
       }
+    } else {
+      this.shakeOffsetX = 0;
+      this.shakeOffsetY = 0;
     }
   }
 
@@ -27,9 +37,17 @@ export class PhysicsSystem {
     return this.shakeIntensity;
   }
 
+  getShakeX(): number {
+    return this.shakeOffsetX;
+  }
+
+  getShakeY(): number {
+    return this.shakeOffsetY;
+  }
+
   // UFO update logic
-  updateUFO(g: GameState, now: number): void {
-    g.ufoTimer -= now;
+  updateUFO(g: GameState, dt: number): void {
+    g.ufoTimer -= dt;
     if (!g.ufo && g.ufoTimer <= 0) {
       const dir = Math.random() < 0.5 ? -1 : 1;
       g.ufo = createUFO();
@@ -38,8 +56,7 @@ export class PhysicsSystem {
     }
 
     if (g.ufo) {
-      const moveScale = 1; // UFO moves at constant speed
-      g.ufo.x += g.ufo.dx * moveScale;
+      g.ufo.x += g.ufo.dx;
       if (g.ufo.x > GAME_CONFIG.canvas.width + 50 || g.ufo.x + g.ufo.w < -50) {
         g.ufo = null;
         g.ufoTimer = UFO_TIMER_MIN + Math.random() * UFO_TIMER_RANGE;
@@ -90,7 +107,7 @@ export class PhysicsSystem {
         p.x += p.vx * moveScale;
         p.y += p.vy * moveScale;
       }
-      p.life -= moveScale * 60; // Convert dt to approximate frames
+      p.life -= moveScale * GAME_CONFIG.particle.lifeDecayPerFrame;
       if (p.life <= 0) g.particles.splice(i, 1);
     }
   }
@@ -144,31 +161,13 @@ export class PhysicsSystem {
     }
   }
 
-  // Inactive bullet cleanup
-  cleanupInactiveBullets(g: GameState): void {
-    for (let i = g.bullets.length - 1; i >= 0; i--) {
-      if (g.bullets[i].y < -20 || g.bullets[i].y > GAME_CONFIG.canvas.height + 20) {
-        g.bullets.splice(i, 1);
-      }
-    }
-  }
-
-  // Inactive particle cleanup
-  cleanupInactiveParticles(g: GameState): void {
-    for (let i = g.particles.length - 1; i >= 0; i--) {
-      if (g.particles[i].life <= 0) {
-        g.particles.splice(i, 1);
-      }
-    }
-  }
-
   // Time-based player invulnerability countdown
-  updatePlayerInvulnerability(g: GameState): void {
-    if (g.player.invulnerable > 0) g.player.invulnerable -= 16; // Approx 16ms per frame
+  updatePlayerInvulnerability(g: GameState, dt: number): void {
+    if (g.player.invulnerable > 0) g.player.invulnerable -= dt;
   }
 
   // Time-based cooldown countdown
-  updateCooldowns(g: GameState): void {
-    if (g.player.cooldown > 0) g.player.cooldown -= 16;
+  updateCooldowns(g: GameState, dt: number): void {
+    if (g.player.cooldown > 0) g.player.cooldown -= dt;
   }
 }

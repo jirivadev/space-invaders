@@ -1,28 +1,8 @@
-import { GAME_CONFIG, COLORS, STAR_LAYERS, SPRITES } from '../config';
-import { drawPlayer, drawSprite, drawShield } from './entity-factory';
+import { GAME_CONFIG, COLORS, STAR_LAYERS, SPRITES, SPRITES_2 } from '../config';
+import type { Shield, Alien, UFO, Player, Star, Bullet, Particle, PowerUp, LeaderboardEntry } from '../types';
+import { drawPlayer, drawSprite, drawShield } from '../renderer-utils';
 
 export class RenderingSystem {
-  private shakeX: number = 0;
-  private shakeY: number = 0;
-  private isShaking: boolean = false;
-
-  updateShake(intensity: number): void {
-    if (intensity > 0) {
-      this.shakeX = (Math.random() - 0.5) * 2 * intensity;
-      this.shakeY = (Math.random() - 0.5) * 2 * intensity;
-      this.isShaking = true;
-    } else {
-      this.shakeX = 0;
-      this.shakeY = 0;
-      this.isShaking = false;
-    }
-  }
-
-  // Get current shake offset if active
-  getShakeOffset(): { x: number; y: number; active: boolean } {
-    return { x: this.shakeX, y: this.shakeY, active: this.isShaking };
-  }
-
   // Clear canvas with background color
   clearCanvas(ctx: CanvasRenderingContext2D): void {
     ctx.imageSmoothingEnabled = false;
@@ -31,7 +11,7 @@ export class RenderingSystem {
   }
 
   // Draw starfield with twinkling effect
-  drawStars(ctx: CanvasRenderingContext2D, stars: any[], now: number): void {
+  drawStars(ctx: CanvasRenderingContext2D, stars: Star[], now: number): void {
     ctx.globalAlpha = 1;
     for (const s of stars) {
       const config = STAR_LAYERS[s.layer - 1];
@@ -60,32 +40,32 @@ export class RenderingSystem {
   }
 
   // Draw shields
-  drawShields(ctx: CanvasRenderingContext2D, shields: any[]): void {
+  drawShields(ctx: CanvasRenderingContext2D, shields: Shield[]): void {
     for (const s of shields) {
       drawShield(ctx, s);
     }
   }
 
   // Draw aliens with animation frames
-  drawAliens(ctx: CanvasRenderingContext2D, aliens: any[], frame: number): void {
+  drawAliens(ctx: CanvasRenderingContext2D, aliens: Alien[], frame: number): void {
     for (const a of aliens) {
       if (!a.alive) continue;
       const color = COLORS[a.type];
-      const pattern = frame === 0 ? SPRITES.squid : SPRITES.crab;
+      const pattern = frame === 0 ? SPRITES[a.type] : SPRITES_2[a.type];
       drawSprite(ctx, pattern, a.x, a.y, GAME_CONFIG.alien.spriteScale, color);
     }
   }
 
   // Draw UFO
-  drawUFO(ctx: CanvasRenderingContext2D, ufo: any | null): void {
+  drawUFO(ctx: CanvasRenderingContext2D, ufo: UFO | null): void {
     if (!ufo) return;
     drawSprite(ctx, SPRITES.ufo, ufo.x, ufo.y, GAME_CONFIG.alien.spriteScale, COLORS.ufo);
   }
 
-  // Draw player (with invulnerability blink effect)
-  drawPlayer(ctx: CanvasRenderingContext2D, player: any, invulnerableTime: number, activePowerUp: boolean): void {
+  // Draw player (with invulnerability blink effect and optional shield aura)
+  drawPlayer(ctx: CanvasRenderingContext2D, player: Player, invulnerableTime: number, hasShieldAura: boolean): void {
     const playerBlink = invulnerableTime > 0 && Math.floor(Date.now() / GAME_CONFIG.ui.invulnerabilityBlinkInterval) % 2 === 0;
-    if (activePowerUp && !playerBlink) {
+    if (hasShieldAura && !playerBlink) {
       ctx.strokeStyle = '#3b82f6';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -101,7 +81,7 @@ export class RenderingSystem {
   }
 
   // Draw power-ups
-  drawPowerUps(ctx: CanvasRenderingContext2D, powerUps: any[]): void {
+  drawPowerUps(ctx: CanvasRenderingContext2D, powerUps: PowerUp[]): void {
     for (const p of powerUps) {
       let color = '#ffffff';
       let label = '?';
@@ -127,7 +107,7 @@ export class RenderingSystem {
   }
 
   // Draw bullets with trail and glow effects
-  drawBullets(ctx: CanvasRenderingContext2D, bullets: any[]): void {
+  drawBullets(ctx: CanvasRenderingContext2D, bullets: Bullet[]): void {
     for (const b of bullets) {
       const bulletColor = b.owner === 'player' ? COLORS.playerBullet : COLORS.alienBullet;
       const glowColor = b.owner === 'player' ? 'rgba(250, 204, 21, ' : 'rgba(248, 113, 113, ';
@@ -169,7 +149,7 @@ export class RenderingSystem {
   }
 
   // Draw particles
-  drawParticles(ctx: CanvasRenderingContext2D, particles: any[]): void {
+  drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[]): void {
     for (const p of particles) {
       const alpha = Math.max(0, p.life / p.maxLife);
       ctx.globalAlpha = alpha;
@@ -232,7 +212,7 @@ export class RenderingSystem {
   }
 
   // Draw menu screen
-  drawMenu(ctx: CanvasRenderingContext2D, leaderboard: any[], pendingName: string): void {
+  drawMenu(ctx: CanvasRenderingContext2D, leaderboard: LeaderboardEntry[]): void {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, GAME_CONFIG.canvas.width, GAME_CONFIG.canvas.height);
     ctx.fillStyle = COLORS.text;

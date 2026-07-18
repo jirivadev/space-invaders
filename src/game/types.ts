@@ -122,9 +122,8 @@ export interface GameState {
     shield: number;
   };
   pendingName: string;
-  shakeIntensity: number;
-  shakeDuration: number;
   lastTime: number;
+  initialized: boolean;
   leaderboardCache: LeaderboardEntry[];
 }
 

@@ -1,14 +1,7 @@
 import type { GameState, GameStatus } from '../types';
-import { GAME_CONFIG } from '../config';
-import {
-  SHIELD_POSITIONS,
-  HIGH_SCORE_KEY,
-  MAX_LEADERBOARD_ENTRIES,
-  LEADERBOARD_KEY,
-  createStars,
-  createShield,
-  getLeaderboard
-} from './entity-factory';
+import { GAME_CONFIG, HIGH_SCORE_KEY, SHIELD_POSITIONS } from '../config';
+import { createStars, createShield } from './entity-factory';
+import { getLeaderboard } from '../leaderboard';
 
 export class GameStateManager {
   // Create initial game state
@@ -23,7 +16,7 @@ export class GameStateManager {
       lives,
       aliens: [],
       bullets: [],
-      shields: SHIELD_POSITIONS.map((x) => createShield(x, GAME_CONFIG.shield.y)),
+      shields: SHIELD_POSITIONS.map((x: number) => createShield(x, GAME_CONFIG.shield.y)),
       ufo: null,
       particles: [],
       player: {
@@ -49,38 +42,10 @@ export class GameStateManager {
         shield: 0,
       },
       pendingName: '',
-      shakeIntensity: 0,
-      shakeDuration: 0,
       lastTime: 0,
+      initialized: false,
       leaderboardCache: getLeaderboard(),
     };
-  }
-
-  // Create playing state
-  createPlayingState(score: number = 0, lives: number = 3): GameState {
-    return this.createInitialState(score, lives, 'playing');
-  }
-
-  // Create game over state
-  createGameOverState(score: number = 0, lives: number = 3): GameState {
-    return this.createInitialState(score, lives, 'gameover');
-  }
-
-  // Create name entry state (for high score)
-  createNameEntryState(score: number): GameState {
-    const state = this.createInitialState(score, 3, 'nameEntry');
-    state.pendingName = '';
-    return state;
-  }
-
-  // Reset current state with new score/lives
-  resetCurrentState(g: GameState, score: number, lives: number, status: GameStatus): GameState {
-    return this.createInitialState(score, lives, status);
-  }
-
-  // Get current state reference
-  getCurrentState(g: GameState): GameState {
-    return g;
   }
 
   // Set state to playing
@@ -96,27 +61,21 @@ export class GameStateManager {
     g.ufo = null;
   }
 
-  // Set state to game over
-  setGameOver(g: GameState, saveHighScore: boolean = true): void {
-    if (g.status === 'gameover') return;
-    g.status = 'gameover';
-    if (saveHighScore && g.score > g.highScore) {
-      g.highScore = g.score;
-      try {
-        localStorage.setItem(HIGH_SCORE_KEY, String(g.highScore));
-      } catch {
-        // localStorage may be unavailable
-      }
+}
+
+export function setGameOver(g: GameState, saveHighScore: boolean = true) {
+  if (g.status === 'gameover' || g.status === 'nameEntry') return;
+  const isNewHighScore = saveHighScore && g.score > g.highScore;
+  if (isNewHighScore) {
+    g.highScore = g.score;
+    try {
+      localStorage.setItem(HIGH_SCORE_KEY, String(g.highScore));
+    } catch {
+      // localStorage may be unavailable (quota exceeded, private browsing)
     }
-  }
-
-  // Set state to name entry
-  setNameEntry(g: GameState): void {
+    g.pendingName = '';
     g.status = 'nameEntry';
-  }
-
-  // Store leaderboard for menu display
-  setLeaderboardCache(g: GameState, entries: any[]): void {
-    g.leaderboardCache = entries;
+  } else {
+    g.status = 'gameover';
   }
 }

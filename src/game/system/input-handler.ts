@@ -12,7 +12,7 @@ export class InputHandler {
     this.handleBlur = this._onBlur.bind(this);
   }
 
-  start(g: GameState) {
+  start() {
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     window.addEventListener('blur', this.handleBlur);

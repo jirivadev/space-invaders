@@ -81,6 +81,7 @@ export const RAPID_FIRE_COOLDOWN = 120;
  */
 export const BOMB_PARTICLES_PER_ALIEN = 2;
 export const MAX_PARTICLES = 500;
+export const PARTICLE_LIFE_DECAY_PER_FRAME = 60;
 
 /**
  * Shield positions (X coordinates for 4 shields)
@@ -161,6 +162,7 @@ export const GAME_CONFIG = {
   particle: {
     bombParticlesPerAlien: BOMB_PARTICLES_PER_ALIEN,
     maxCount: MAX_PARTICLES,
+    lifeDecayPerFrame: PARTICLE_LIFE_DECAY_PER_FRAME,
   },
 
   // UI & Display
@@ -169,6 +171,23 @@ export const GAME_CONFIG = {
     nameEntryMaxChars: PLAYER_NAME_MAX_LENGTH,
   },
 } as const;
+
+/**
+ * Color palette interface for game entities
+ */
+export interface Colors {
+  readonly bg: string;
+  readonly player: string;
+  readonly playerBullet: string;
+  readonly alienBullet: string;
+  readonly squid: string;
+  readonly crab: string;
+  readonly octopus: string;
+  readonly ufo: string;
+  readonly shield: string;
+  readonly text: string;
+  readonly star: string;
+}
 
 /**
  * Game colors
@@ -185,7 +204,7 @@ export const COLORS = {
   shield: '#4ade80',
   text: '#ffffff',
   star: '#94a3b8',
-} as const;
+} as const satisfies Colors;
 
 /**
  * Star layer configurations

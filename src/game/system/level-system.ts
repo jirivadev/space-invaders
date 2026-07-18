@@ -1,6 +1,7 @@
-import type { GameState, FormationType, LevelConfig } from '../types';
+import type { GameState, FormationType, LevelConfig, Alien } from '../types';
 import { GAME_CONFIG } from '../config';
-import { createAliens, rectsOverlap, createExplosionParticles, createImpactFlash, setGameOver } from './entity-factory';
+import { createAliens } from './entity-factory';
+import { setGameOver } from './state-manager';
 
 // Level configuration manager
 function getLevelConfig(level: number): LevelConfig {
@@ -53,7 +54,6 @@ export class LevelSystem {
 
   // Process alien movement in response to edge collision
   moveAliens(g: GameState, now: number): void {
-    const levelConfig = getLevelConfig(g.level);
     const stepInterval = this.getAlienStepInterval(g);
 
     g.alienStepTimer += now;
@@ -158,36 +158,4 @@ export class LevelSystem {
     }
   }
 
-  // Reset level state when advancing
-  resetLevelState(g: GameState): void {
-    const config = getLevelConfig(g.level);
-    g.aliens = createAliens(config.formation, config.startY);
-    g.alienDir = 1;
-    g.alienStepTimer = 0;
-    g.alienShootTimer = 0;
-    g.alienFrame = 0;
-    g.levelAnnounceTimer = 0;
-  }
-
-  // Initialize level for new game
-  initializeLevel(g: GameState): void {
-    const config = getLevelConfig(g.level);
-    g.aliens = createAliens(config.formation, config.startY);
-    g.alienDir = 1;
-    g.alienStepTimer = 0;
-    g.alienShootTimer = 0;
-    g.alienFrame = 0;
-    g.levelAnnounceTimer = 2000;
-  }
-
-  // Start playing state
-  startPlayingState(g: GameState): void {
-    const levelConfig = getLevelConfig(g.level);
-    g.aliens = createAliens(levelConfig.formation, levelConfig.startY);
-    g.alienDir = 1;
-    g.alienStepTimer = 0;
-    g.alienShootTimer = 0;
-    g.alienFrame = 0;
-    g.levelAnnounceTimer = 2000;
-  }
 }

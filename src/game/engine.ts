@@ -1,14 +1,14 @@
-import type { GameState, GameCallbacks } from './types';
-import { GAME_CONFIG, COLORS, STAR_LAYERS, SHIELD_POSITIONS } from './config';
+import type { GameState, GameStatus, GameCallbacks } from './types';
+import { GAME_CONFIG, STAR_LAYERS } from './config';
 import { InputHandler } from './system/input-handler';
 import { CollisionSystem } from './system/collision-system';
 import { PhysicsSystem } from './system/physics-system';
 import { LevelSystem } from './system/level-system';
 import { RenderingSystem } from './system/rendering-system';
 import { GameStateManager } from './system/state-manager';
-import {
-  getLeaderboard, createStars, createShield, createExplosionParticles, createImpactFlash, setGameOver
-} from './system/entity-factory';
+import { getLeaderboard, addToLeaderboard } from './leaderboard';
+import { createExplosionParticles, createImpactFlash } from './system/entity-factory';
+import { setGameOver } from './system/state-manager';
 
 export class GameEngine {
   private ctx: CanvasRenderingContext2D | null = null;
@@ -30,7 +30,7 @@ export class GameEngine {
     this.ctx = canvas.getContext('2d');
     
     // Initialize systems
-    this.inputHandler = new InputHandler(callbacks);
+    this.inputHandler = new InputHandler({ ...callbacks, onGetState: () => this.g! });
     this.collisionSystem = new CollisionSystem();
     this.physicsSystem = new PhysicsSystem();
     this.levelSystem = new LevelSystem();
@@ -40,7 +40,7 @@ export class GameEngine {
 
   start() {
     this.g = this.stateManager.createInitialState(0, 3, 'menu');
-    this.inputHandler.start(this.g);
+    this.inputHandler.start();
     this.rafId = requestAnimationFrame(this._frame.bind(this));
   }
 
@@ -49,9 +49,24 @@ export class GameEngine {
     this.inputHandler.stop();
   }
 
+  // Called by InputHandler via onAddToLeaderboard callback
+  addToLeaderboard(name: string, score: number): void {
+    addToLeaderboard(name, score);
+    if (this.g) {
+      this.g.leaderboardCache = getLeaderboard();
+    }
+  }
+
+  // Called by InputHandler via onStateChange callback
+  setStatus(status: GameStatus): void {
+    if (this.g) {
+      this.g.status = status;
+    }
+  }
+
   private g: GameState | null = null;
 
-  private _frame(now: number) {
+  private _frame() {
     this._update();
     this._draw();
     this.rafId = requestAnimationFrame(this._frame.bind(this));
@@ -61,18 +76,11 @@ export class GameEngine {
     const g = this.g;
     if (!g) return;
 
-    // Initialize on first frame if needed
-    if (g.status === 'menu' && !g.stars.length) {
-      g.stars = createStars();
-      g.shields = SHIELD_POSITIONS.map((x) => createShield(x, GAME_CONFIG.shield.y));
-      g.leaderboardCache = getLeaderboard();
-    }
-
     // Time management
-    const now = g.lastTime === 0 ? GAME_CONFIG.canvas.targetDt : Date.now() - g.lastTime;
-    const rawDt = now;
+    const rawDt = g.initialized ? Date.now() - g.lastTime : GAME_CONFIG.canvas.targetDt;
     const dt = Math.min(GAME_CONFIG.canvas.maxDt, rawDt);
     g.lastTime = Date.now();
+    g.initialized = true;
 
     const moveScale = dt / GAME_CONFIG.canvas.targetDt;
 
@@ -86,9 +94,6 @@ export class GameEngine {
       }
     }
 
-    // Update shake
-    this.physicsSystem.updateShake(dt);
-
     // State transitions
     this._handleStateTransitions(g);
 
@@ -96,18 +101,16 @@ export class GameEngine {
     if (g.status !== 'playing') return;
 
     // Update timers and power-ups
-    g.ufoTimer -= dt;
-    g.alienShootTimer -= dt;
-    this.physicsSystem.updateCooldowns(g);
-    this.physicsSystem.updatePlayerInvulnerability(g);
-    this.collisionSystem.applyPowerUps(g);
+    this.physicsSystem.updateCooldowns(g, dt);
+    this.physicsSystem.updatePlayerInvulnerability(g, dt);
+    this.collisionSystem.applyPowerUps(g, dt);
     this.physicsSystem.updateShake(dt);
 
     // UFO logic
-    this.physicsSystem.updateUFO(g, now);
+    this.physicsSystem.updateUFO(g, dt);
 
     // Input processing
-    g = this.inputHandler.processInput(g, dt);
+    this.inputHandler.processInput(g, dt);
     
     // Check for shoot
     if (this.inputHandler.checkForShoot(g)) {
@@ -119,7 +122,6 @@ export class GameEngine {
 
     // Update bullets
     this.physicsSystem.updateBullets(g, moveScale);
-    this.physicsSystem.cleanupInactiveBullets(g);
 
     // Level progression
     this.levelSystem.checkLevelComplete(g);
@@ -137,23 +139,6 @@ export class GameEngine {
     // Shield damage from aliens
     this.physicsSystem.damageShieldsWithAliens(g);
 
-    // Collision detection - Bullet vs Shield
-    for (let i = g.bullets.length - 1; i >= 0; i--) {
-      const b = g.bullets[i];
-      if (b.owner !== 'player') continue;
-
-      // Check shield collision
-      for (const s of g.shields) {
-        if (this.collisionSystem.checkBulletShieldCollision(b, s)) {
-          g.particles.push(...createExplosionParticles(b.x + b.w / 2, b.y + b.h / 2, COLORS.shield, 4));
-          g.particles.push(createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, '#86efac', 10));
-          this.physicsSystem.triggerShake(g, 2, 65);
-          g.bullets.splice(i, 1);
-          break;
-        }
-      }
-    }
-
     // Collision detection - Bullets vs Game Objects
     for (let i = g.bullets.length - 1; i >= 0; i--) {
       const b = g.bullets[i];
@@ -162,7 +147,7 @@ export class GameEngine {
       if (b.owner === 'player') {
         for (const s of g.shields) {
           if (this.collisionSystem.checkPlayerBulletShield(b, s, g)) {
-            this.physicsSystem.triggerShake(g, 2, 65);
+            this.physicsSystem.triggerShake( 2, 65);
             g.bullets.splice(i, 1);
             break;
           }
@@ -174,20 +159,19 @@ export class GameEngine {
       if (b.owner === 'player') {
         for (const a of g.aliens) {
           if (this.collisionSystem.checkBulletAlienCollision(b, a, g)) {
-            this.physicsSystem.triggerShake(g, 4, 130);
+            this.physicsSystem.triggerShake( 4, 130);
             g.particles.push(createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, '#fef08a', 12));
             break;
           }
         }
-        continue;
-      }
-
-      // Check UFO collision
-      if (b.owner === 'player' && g.ufo) {
-        if (this.collisionSystem.checkBulletUFOCollision(b, g.ufo, g)) {
-          g.bullets.splice(i, 1);
-          continue;
+        // Check UFO collision
+        if (g.ufo) {
+          if (this.collisionSystem.checkBulletUFOCollision(b, g.ufo, g)) {
+            g.bullets.splice(i, 1);
+            continue;
+          }
         }
+        continue;
       }
 
       // Check player collision
@@ -203,11 +187,11 @@ export class GameEngine {
           g.player.invulnerable = 2000;
           g.particles.push(...createExplosionParticles(g.player.x + g.player.w / 2, g.player.y + g.player.h / 2, '#67e8f9', 50));
           g.particles.push(createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, '#fca5a5', 14));
-          this.physicsSystem.triggerShake(g, 5, 130);
+          this.physicsSystem.triggerShake( 5, 130);
           g.bullets.splice(i, 1);
 
           if (g.lives <= 0) {
-            this.physicsSystem.triggerShake(g, 8, 250);
+            this.physicsSystem.triggerShake( 8, 250);
             setGameOver(g);
           }
           continue;
@@ -272,10 +256,12 @@ export class GameEngine {
 
     // Clear and apply shake
     this.renderingSystem.clearCanvas(ctx);
-    const shake = this.renderingSystem.getShakeOffset();
-    if (shake.active) {
+    const shakeX = this.physicsSystem.getShakeX();
+    const shakeY = this.physicsSystem.getShakeY();
+    const shakeActive = shakeX !== 0 || shakeY !== 0;
+    if (shakeActive) {
       ctx.save();
-      ctx.translate(shake.x, shake.y);
+      ctx.translate(shakeX, shakeY);
     }
 
     // Draw game elements
@@ -293,7 +279,7 @@ export class GameEngine {
 
     // Draw screens based on status
     if (g.status === 'menu') {
-      this.renderingSystem.drawMenu(ctx, g.leaderboardCache, g.pendingName);
+      this.renderingSystem.drawMenu(ctx, g.leaderboardCache);
     } else if (g.status === 'gameover') {
       this.renderingSystem.drawGameOver(ctx, g.score);
     } else if (g.status === 'nameEntry') {
@@ -301,7 +287,7 @@ export class GameEngine {
     }
 
     // Restore from shake
-    if (shake.active) {
+    if (shakeActive) {
       ctx.restore();
     }
   }

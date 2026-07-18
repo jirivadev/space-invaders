@@ -1,56 +1,8 @@
 import type {
-  GameState, Player, Alien, Shield, Particle, Star, UFO, PowerUp, PowerUpType, FormationType
+  Alien, Shield, Particle, Star, UFO, PowerUp, PowerUpType, FormationType
 } from '../types';
-import { GAME_CONFIG } from '../config';
-import {
-  COLORS,
-  STAR_LAYERS,
-  SPRITES,
-  SPRITES_2,
-  UFO_TIMER_MIN,
-  UFO_TIMER_RANGE,
-  HIGH_SCORE_KEY,
-  LEADERBOARD_KEY,
-  MAX_LEADERBOARD_ENTRIES,
-} from '../constants';
-
-// ========== Re-export for convenience ==========
-export {
-  COLORS,
-  STAR_LAYERS,
-  SPRITES,
-  SPRITES_2,
-  UFO_TIMER_MIN,
-  UFO_TIMER_RANGE,
-  HIGH_SCORE_KEY,
-  LEADERBOARD_KEY,
-  MAX_LEADERBOARD_ENTRIES,
-  SHIELD_POSITIONS,
-};
-
-// ========== Leaderboard ==========
-
-export function getLeaderboard(): Array<{ name: string; score: number; date: number }> {
-  try {
-    const raw = localStorage.getItem(LEADERBOARD_KEY);
-    if (!raw) return [];
-    const entries = JSON.parse(raw) as Array<{ name: string; score: number; date: number }>;
-    return entries.sort((a, b) => b.score - a.score).slice(0, MAX_LEADERBOARD_ENTRIES);
-  } catch {
-    return [];
-  }
-}
-
-export function addToLeaderboard(name: string, score: number) {
-  const entries = getLeaderboard();
-  entries.push({ name: name.trim(), score, date: Date.now() });
-  entries.sort((a, b) => b.score - a.score);
-  try {
-    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries.slice(0, MAX_LEADERBOARD_ENTRIES)));
-  } catch {
-    // localStorage may be unavailable
-  }
-}
+import { GAME_CONFIG, STAR_LAYERS, SPRITES } from '../config';
+import { hexToRgb } from '../geometry';
 
 // ========== Entity Creation ==========
 
@@ -266,79 +218,6 @@ export function createImpactFlash(x: number, y: number, color: string, size: num
   };
 }
 
-// ========== Utilities ==========
-
-export function rectsOverlap(
-  a: { x: number; y: number; w: number; h: number },
-  b: { x: number; y: number; w: number; h: number }
-): boolean {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
-
-export function hexToRgb(hex: string): [number, number, number] {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
-    : [255, 255, 255];
-}
-
-export function drawSprite(
-  ctx: CanvasRenderingContext2D,
-  pattern: string[],
-  x: number,
-  y: number,
-  scale: number,
-  color: string
-) {
-  ctx.fillStyle = color;
-  for (let r = 0; r < pattern.length; r++) {
-    const row = pattern[r];
-    for (let c = 0; c < row.length; c++) {
-      if (row[c] === 'x') {
-        ctx.fillRect(x + c * scale, y + r * scale, scale, scale);
-      }
-    }
-  }
-}
-
-export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player) {
-  const scale = GAME_CONFIG.player.drawScale;
-  const pattern = [
-    '----x----',
-    '---xxx---',
-    '--xxxxx--',
-    'xxxxxxxxx',
-    'xxxxxxxxx',
-    'x-xxx-x-',
-    'x-x-x-x-',
-  ];
-  ctx.fillStyle = COLORS.player;
-  for (let r = 0; r < pattern.length; r++) {
-    const row = pattern[r];
-    for (let c = 0; c < row.length; c++) {
-      if (row[c] === 'x') {
-        ctx.fillRect(player.x + c * scale, player.y + r * scale, scale, scale);
-      }
-    }
-  }
-}
-
-export function drawShield(ctx: CanvasRenderingContext2D, shield: Shield) {
-  ctx.fillStyle = COLORS.shield;
-  for (let r = 0; r < shield.rows; r++) {
-    for (let c = 0; c < shield.cols; c++) {
-      if (shield.pixels[r][c]) {
-        ctx.fillRect(
-          shield.x + c * shield.pixelSize,
-          shield.y + r * shield.pixelSize,
-          shield.pixelSize,
-          shield.pixelSize
-        );
-      }
-    }
-  }
-}
-
 export function damageShieldRect(shield: Shield, x: number, y: number, w: number, h: number): boolean {
   const left = Math.floor((x - shield.x) / shield.pixelSize);
   const right = Math.floor((x + w - shield.x) / shield.pixelSize);
@@ -357,15 +236,3 @@ export function damageShieldRect(shield: Shield, x: number, y: number, w: number
   return hit;
 }
 
-export function setGameOver(g: GameState, saveHighScore: boolean = true) {
-  if (g.status === 'gameover') return;
-  g.status = 'gameover';
-  if (saveHighScore && g.score > g.highScore) {
-    g.highScore = g.score;
-    try {
-      localStorage.setItem(HIGH_SCORE_KEY, String(g.highScore));
-    } catch {
-      // localStorage may be unavailable (quota exceeded, private browsing)
-    }
-  }
-}

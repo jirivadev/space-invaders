@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { GameEngine } from './game/engine';
 import type { UIState } from './game/types';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from './game/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from './game/config';
 
 const initialUI: UIState = {
   score: 0, highScore: 0, lives: 3,
@@ -16,7 +16,11 @@ export default function App() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const engine = new GameEngine(canvas, { onUIChange: setUi });
+    const engine = new GameEngine(canvas, {
+      onUIChange: setUi,
+      onAddToLeaderboard: (name, score) => engineRef.current?.addToLeaderboard(name, score),
+      onStateChange: (status) => engineRef.current?.setStatus(status),
+    });
     engineRef.current = engine;
     engine.start();
     return () => {

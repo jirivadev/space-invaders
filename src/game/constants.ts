@@ -76,28 +76,7 @@ export const SHIELD_POSITIONS = GAME_CONFIG.shield.positions;
 export { GAME_CONFIG };
 
 /**
- * Colors defined for game entities
- */
-export const COLORS = {
-  bg: '#050505',
-  player: '#4ade80',
-  playerBullet: '#facc15',
-  alienBullet: '#f87171',
-  squid: '#67e8f9',
-  crab: '#f0abfc',
-  octopus: '#86efac',
-  ufo: '#f87171',
-  shield: '#4ade80',
-  text: '#ffffff',
-  star: '#94a3b8',
-  // Accessor for star layers (dynamic config)
-  get starLayers() {
-    return STAR_LAYERS;
-  },
-} as const;
-
-/**
- * Star layer configurations
+ * Star layer configuration type
  */
 export interface StarLayerConfig {
   count: number;
@@ -108,90 +87,5 @@ export interface StarLayerConfig {
   maxAlpha: number;
 }
 
-export const STAR_LAYERS: StarLayerConfig[] = [
-  { count: 50, minSize: 1, maxSize: 1, speed: 0.3, minAlpha: 0.2, maxAlpha: 0.5 },
-  { count: 30, minSize: 1, maxSize: 2, speed: 0.8, minAlpha: 0.4, maxAlpha: 0.7 },
-  { count: 15, minSize: 2, maxSize: 3, speed: 1.5, minAlpha: 0.6, maxAlpha: 1.0 },
-];
-
-/**
- * Sprite patterns for aliens
- */
-export const SPRITES: Record<string, string[]> = {
-  squid: [
-    '---xx---',
-    '--xxxx--',
-    '-xxxxxx-',
-    '-xx-xx--',
-    '-xxxxxx-',
-    '--x--x--',
-    '-x----x-',
-    '--------',
-  ],
-  crab: [
-    '--x---x--',
-    '---x-x---',
-    '--xxxxx--',
-    '-xxxxxxx-',
-    'xxxxxxxx-',
-    'xxx-xxx--',
-    'x-x-x-x--',
-    '---x-x---',
-  ],
-  octopus: [
-    '--xxxxxx--',
-    '-xxxxxxxx-',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxx-xxx-xxx',
-    'xx-x---x-xx',
-    '---x---x---',
-  ],
-  ufo: [
-    '-----xxxxxx-----',
-    '---xxxxxxxxxx---',
-    '--xxxxxxxxxxxx--',
-    '-xxxxxxxxxxxxxx-',
-    '-xxxxxxxxxxxxxx-',
-    'xx-xxxxxxxxxx-xx',
-    'x---xxxxxxxx---x',
-    '-----xxxxxx-----',
-  ],
-};
-
-/**
- * Alternating sprite patterns for alien animation
- */
-export const SPRITES_2: Record<string, string[]> = {
-  squid: [
-    '--------',
-    '---xx---',
-    '---xx---',
-    '--xxxx--',
-    '--x--x--',
-    '-x----x-',
-    '--------',
-    '--------',
-  ],
-  crab: [
-    '---------',
-    '---------',
-    '--xxxxx--',
-    '-xxxxxxx-',
-    '-xxxxxxx-',
-    'x-xxxxx-x',
-    '--x---x--',
-    '---------',
-  ],
-  octopus: [
-    '----------',
-    '----------',
-    '--xxxxxx--',
-    '-xxxxxxxx-',
-    '-xxxxxxxx-',
-    'xxxxxxxxxx',
-    'xxx-xxx-xxx',
-    '---x---x---',
-  ],
-};
+// Re-export graphics constants from config.ts (single source of truth)
+export { COLORS, STAR_LAYERS, SPRITES, SPRITES_2 } from './config';
