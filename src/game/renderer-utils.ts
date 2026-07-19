@@ -1,5 +1,5 @@
-import { GAME_CONFIG, COLORS } from './config';
-import type { Player, Shield } from './types';
+import { COLORS } from './config';
+import type { Shield } from './types';
 
 // ========== Rendering Helpers ==========
 
@@ -20,19 +20,6 @@ export function drawSprite(
       }
     }
   }
-}
-
-export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player) {
-  const pattern = [
-    '----x----',
-    '---xxx---',
-    '--xxxxx--',
-    'xxxxxxxxx',
-    'xxxxxxxxx',
-    'x-xxx-x-',
-    'x-x-x-x-',
-  ];
-  drawSprite(ctx, pattern, player.x, player.y, GAME_CONFIG.player.drawScale, COLORS.player);
 }
 
 export function drawShield(ctx: CanvasRenderingContext2D, shield: Shield) {

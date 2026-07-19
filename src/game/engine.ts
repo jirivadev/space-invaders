@@ -5,7 +5,7 @@ import { CollisionSystem } from './system/collision-system';
 import { PhysicsSystem } from './system/physics-system';
 import { LevelSystem, getLevelConfig } from './system/level-system';
 import { RenderingSystem } from './system/rendering-system';
-import { GameStateManager } from './system/state-manager';
+import { createInitialState, setPlaying, setMenu } from './system/state-manager';
 import { getLeaderboard, addToLeaderboard } from './leaderboard';
 import { createExplosionParticles, createImpactFlash, createAliens, createShield } from './system/entity-factory';
 import { setGameOver } from './system/state-manager';
@@ -22,7 +22,6 @@ export class GameEngine {
   private physicsSystem: PhysicsSystem;
   private levelSystem: LevelSystem;
   private renderingSystem: RenderingSystem;
-  private stateManager: GameStateManager;
 
   private lastUI: { score: number; highScore: number; lives: number; status: string; level: number; rapidFireTime: number; shieldTime: number } | null = null;
 
@@ -37,11 +36,10 @@ export class GameEngine {
     this.physicsSystem = new PhysicsSystem();
     this.levelSystem = new LevelSystem();
     this.renderingSystem = new RenderingSystem();
-    this.stateManager = new GameStateManager();
   }
 
   start() {
-    this.g = this.stateManager.createInitialState(0, 3, 'menu');
+    this.g = createInitialState(0, 3, 'menu');
     this.inputHandler.start();
     this.rafId = requestAnimationFrame(this._boundFrame);
   }
@@ -106,7 +104,6 @@ export class GameEngine {
     // Update timers and power-ups
     this.physicsSystem.updateCooldowns(g, dt);
     this.physicsSystem.updatePlayerInvulnerability(g, dt);
-    this.collisionSystem.applyPowerUps(g, dt);
     this.physicsSystem.updateShake(dt);
 
     // UFO logic
@@ -249,10 +246,9 @@ export class GameEngine {
   }
 
   private _processDyingAliens(g: GameState, now: number): void {
-    const ALIEN_DEATH_DURATION = 150;
     for (let i = g.aliens.length - 1; i >= 0; i--) {
       const a = g.aliens[i];
-      if (a.dyingAt > 0 && now - a.dyingAt >= ALIEN_DEATH_DURATION) {
+      if (a.dyingAt > 0 && now - a.dyingAt >= GAME_CONFIG.death.alienDuration) {
         g.score += a.pendingScore ?? 0;
         a.pendingScore = 0;
         a.alive = false;
@@ -264,8 +260,7 @@ export class GameEngine {
 
   private _processDyingUFO(g: GameState, now: number): void {
     if (!g.ufo || g.ufo.dyingAt === 0) return;
-    const UFO_DEATH_DURATION = 150;
-    if (now - g.ufo.dyingAt >= UFO_DEATH_DURATION) {
+    if (now - g.ufo.dyingAt >= GAME_CONFIG.death.ufoDuration) {
       g.particles.push(...createExplosionParticles(g.ufo!.x + g.ufo!.w / 2, g.ufo!.y + g.ufo!.h / 2, COLORS.ufo, 40));
       g.ufo = null;
     }
@@ -273,8 +268,7 @@ export class GameEngine {
 
   private _processPlayerDeath(g: GameState, now: number): void {
     if (g.player.diedAt === 0) return;
-    const DEATH_ANIM_DURATION = 300;
-    if (now - g.player.diedAt >= DEATH_ANIM_DURATION) {
+    if (now - g.player.diedAt >= GAME_CONFIG.death.playerDuration) {
       // Spawn death explosion particles
       g.particles.push(...createExplosionParticles(g.player.x + g.player.w / 2, g.player.y + g.player.h / 2, '#67e8f9', 50));
       g.particles.push(createImpactFlash(g.player.x + g.player.w / 2, g.player.y + g.player.h / 2, '#fca5a5', 14));
@@ -305,7 +299,7 @@ export class GameEngine {
           g.alienDir = 1;
           g.alienStepTimer = 0;
           g.alienMoveDown = false;
-          this.stateManager.setPlaying(g);
+          setPlaying(g);
           const cfg = getLevelConfig(g.level);
           g.aliens = createAliens(cfg.formation, cfg.startY);
           g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
@@ -316,7 +310,7 @@ export class GameEngine {
         // Check for spacebar to return to menu
         if (g.keys[' ']) {
           g.keys[' '] = false;
-          this.stateManager.setMenu(g);
+          setMenu(g);
         }
         break;
 

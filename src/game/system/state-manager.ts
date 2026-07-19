@@ -20,66 +20,60 @@ export function resetHighScoreCache(): void {
   _cachedHighScore = null;
 }
 
-export class GameStateManager {
-  // Create initial game state
-  createInitialState(score: number = 0, lives: number = 3, status: GameStatus = 'menu'): GameState {
-    return {
-      status,
-      score,
-      highScore: readCachedHighScore(),
-      level: 1,
-      levelAnnounceTimer: 0,
-      lives,
-      aliens: createAliens(getLevelConfig(1).formation, getLevelConfig(1).startY),
-      bullets: [],
-      shields: SHIELD_POSITIONS.map((x: number) => createShield(x, GAME_CONFIG.shield.y)),
-      ufo: null,
-      particles: [],
-      player: {
-        x: GAME_CONFIG.canvas.width / 2 - GAME_CONFIG.player.width / 2,
-        y: GAME_CONFIG.canvas.groundY - GAME_CONFIG.player.yOffset,
-        w: GAME_CONFIG.player.width,
-        h: GAME_CONFIG.player.height,
-        speed: GAME_CONFIG.player.speed,
-        cooldown: 0,
-        invulnerable: 0,
-        diedAt: 0,
-      },
-      keys: {},
-      alienDir: 1,
-      alienStepTimer: 0,
-      alienFrame: 0,
-      alienMoveDown: false,
-      ufoTimer: 0,
-      alienShootTimer: 0,
-      stars: createStars(),
-      powerUps: [],
-      activePowerUps: {
-        rapidFire: 0,
-        shield: 0,
-      },
-      pendingName: '',
-      lastTime: 0,
-      initialized: false,
-      leaderboardCache: getLeaderboard(),
-      screenOpenedAt: performance.now(),
-    };
-  }
+export function createInitialState(score: number = 0, lives: number = 3, status: GameStatus = 'menu'): GameState {
+  return {
+    status,
+    score,
+    highScore: readCachedHighScore(),
+    level: 1,
+    levelAnnounceTimer: 0,
+    lives,
+    aliens: createAliens(getLevelConfig(1).formation, getLevelConfig(1).startY),
+    bullets: [],
+    shields: SHIELD_POSITIONS.map((x: number) => createShield(x, GAME_CONFIG.shield.y)),
+    ufo: null,
+    particles: [],
+    player: {
+      x: GAME_CONFIG.canvas.width / 2 - GAME_CONFIG.player.width / 2,
+      y: GAME_CONFIG.canvas.groundY - GAME_CONFIG.player.yOffset,
+      w: GAME_CONFIG.player.width,
+      h: GAME_CONFIG.player.height,
+      speed: GAME_CONFIG.player.speed,
+      cooldown: 0,
+      invulnerable: 0,
+      diedAt: 0,
+    },
+    keys: {},
+    alienDir: 1,
+    alienStepTimer: 0,
+    alienFrame: 0,
+    alienMoveDown: false,
+    ufoTimer: 0,
+    alienShootTimer: 0,
+    stars: createStars(),
+    powerUps: [],
+    activePowerUps: {
+      rapidFire: 0,
+      shield: 0,
+    },
+    pendingName: '',
+    lastTime: 0,
+    initialized: false,
+    leaderboardCache: getLeaderboard(),
+    screenOpenedAt: performance.now(),
+  };
+}
 
-  // Set state to playing
-  setPlaying(g: GameState): void {
-    g.status = 'playing';
-    g.levelAnnounceTimer = 0;
-  }
+export function setPlaying(g: GameState): void {
+  g.status = 'playing';
+  g.levelAnnounceTimer = 0;
+}
 
-  // Set state to menu
-  setMenu(g: GameState): void {
-    g.status = 'menu';
-    g.levelAnnounceTimer = 0;
-    g.ufo = null;
-    g.screenOpenedAt = performance.now();
-  }
-
+export function setMenu(g: GameState): void {
+  g.status = 'menu';
+  g.levelAnnounceTimer = 0;
+  g.ufo = null;
+  g.screenOpenedAt = performance.now();
 }
 
 export function setGameOver(g: GameState, saveHighScore: boolean = true) {

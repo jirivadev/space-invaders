@@ -1,49 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { InputHandler } from './input-handler';
 import { GAME_CONFIG } from '../config';
+import { createMockState } from '../test-utils/factory';
 import type { GameState } from '../types';
-
-function createMockState(overrides: Partial<GameState> = {}): GameState {
-  return {
-    status: 'playing',
-    score: 0,
-    highScore: 0,
-    level: 1,
-    levelAnnounceTimer: 0,
-    lives: 3,
-    aliens: [],
-    bullets: [],
-    shields: [],
-    ufo: null,
-    particles: [],
-    player: {
-      x: 100,
-      y: 500,
-      w: 27,
-      h: 21,
-      speed: 5,
-      cooldown: 0,
-      invulnerable: 0,
-      diedAt: 0,
-    },
-    keys: {},
-    alienDir: 1,
-    alienStepTimer: 0,
-    alienFrame: 0,
-    alienMoveDown: false,
-    ufoTimer: 0,
-    alienShootTimer: 0,
-    stars: [],
-    powerUps: [],
-    activePowerUps: { rapidFire: 0, shield: 0 },
-    pendingName: '',
-    lastTime: 0,
-    initialized: false,
-    leaderboardCache: [],
-    screenOpenedAt: 0,
-    ...overrides,
-  };
-}
 
 function makeKeyEvent(key: string): KeyboardEvent {
   return { key, preventDefault: vi.fn() } as unknown as KeyboardEvent;

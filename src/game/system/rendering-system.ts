@@ -1,6 +1,21 @@
 import { GAME_CONFIG, COLORS, STAR_LAYERS, SPRITES, SPRITES_2 } from '../config';
 import type { Shield, Alien, UFO, Player, Star, Bullet, Particle, PowerUp, PowerUpType, LeaderboardEntry } from '../types';
-import { drawPlayer, drawSprite, drawShield } from '../renderer-utils';
+import { drawSprite, drawShield } from '../renderer-utils';
+import {
+  computeDeathAnimation,
+  computeStarTwinkle,
+  computePlayerDeathFragments,
+  computeBulletTrailEntries,
+  computeShimmerSweep,
+  computeBlinkAlpha,
+  computeFadeInAlpha,
+  computeScaleUpAnimation,
+  computeShieldAuraDots,
+  computeAnimationFrameIndex,
+  computePowerUpGlowAlpha,
+  formatPaddedScore,
+  computeThrustFlicker,
+} from '../rendering-math';
 
 const POWER_UP_VISUALS: Record<PowerUpType, { color: string; label: string }> = {
   rapidFire: { color: '#f97316', label: 'R' },
@@ -22,7 +37,7 @@ export class RenderingSystem {
     ctx.globalAlpha = 1;
     for (const s of stars) {
       const config = STAR_LAYERS[s.layer - 1];
-      const twinkle = config.minAlpha + (config.maxAlpha - config.minAlpha) * (0.5 + 0.5 * Math.sin(now * 0.003 + s.twinkleOffset));
+      const twinkle = computeStarTwinkle(now, s.twinkleOffset, config.minAlpha, config.maxAlpha);
       ctx.globalAlpha = twinkle * dimFactor;
       ctx.fillStyle = COLORS.star;
       if (s.size >= 2) {
@@ -59,17 +74,13 @@ export class RenderingSystem {
       if (!a.alive && a.dyingAt === 0) continue;
 
       // Dying alien: white shrinking flash
-      if (a.dyingAt > 0) {
-        const deathElapsed = now - a.dyingAt;
-        const deathDuration = 150;
-        if (deathElapsed >= deathDuration) continue; // will be removed in update
-        const t = deathElapsed / deathDuration;
-        const flashScale = 1 - t;
-        const flashAlpha = 1 - t;
-        ctx.globalAlpha = flashAlpha;
+      const deathAnim = computeDeathAnimation(a.dyingAt, now, GAME_CONFIG.death.alienDuration);
+      if (deathAnim) {
+        if (deathAnim.isComplete) continue; // will be removed in update
+        ctx.globalAlpha = deathAnim.flashAlpha;
         ctx.fillStyle = '#ffffff';
-        const flashW = a.w * flashScale;
-        const flashH = a.h * flashScale;
+        const flashW = a.w * deathAnim.flashScale;
+        const flashH = a.h * deathAnim.flashScale;
         ctx.fillRect(a.x + (a.w - flashW) / 2, a.y + (a.h - flashH) / 2, flashW, flashH);
         ctx.globalAlpha = 1;
         continue;
@@ -86,17 +97,13 @@ export class RenderingSystem {
     if (!ufo) return;
 
     // Dying UFO: white shrinking flash
-    if (ufo.dyingAt > 0) {
-      const deathElapsed = now - ufo.dyingAt;
-      const deathDuration = 150;
-      if (deathElapsed >= deathDuration) return;
-      const t = deathElapsed / deathDuration;
-      const flashScale = 1 - t;
-      const flashAlpha = 1 - t;
-      ctx.globalAlpha = flashAlpha;
+    const deathAnim = computeDeathAnimation(ufo.dyingAt, now, GAME_CONFIG.death.ufoDuration);
+    if (deathAnim) {
+      if (deathAnim.isComplete) return;
+      ctx.globalAlpha = deathAnim.flashAlpha;
       ctx.fillStyle = '#ffffff';
-      const flashW = ufo.w * flashScale;
-      const flashH = ufo.h * flashScale;
+      const flashW = ufo.w * deathAnim.flashScale;
+      const flashH = ufo.h * deathAnim.flashScale;
       ctx.fillRect(ufo.x + (ufo.w - flashW) / 2, ufo.y + (ufo.h - flashH) / 2, flashW, flashH);
       ctx.globalAlpha = 1;
       return;
@@ -113,29 +120,25 @@ export class RenderingSystem {
     // Death animation: shattering sprite
     if (player.diedAt > 0) {
       const deathElapsed = now - player.diedAt;
-      const deathDuration = 300;
-      if (deathElapsed < deathDuration) {
-        const t = deathElapsed / deathDuration;
+      if (deathElapsed < GAME_CONFIG.death.playerDuration) {
+        const t = deathElapsed / GAME_CONFIG.death.playerDuration;
         const deathScale = GAME_CONFIG.player.drawScale * (1 - t * 0.3);
         const deathAlpha = 1 - t;
         ctx.globalAlpha = deathAlpha;
 
         // Alternating death sprites for shattering effect
-        const deathPattern = Math.floor(deathElapsed / 75) % 2 === 0 ? SPRITES.death1 : SPRITES.death2;
+        const deathFrame = computeAnimationFrameIndex(deathElapsed, 75, 2);
+        const deathPattern = deathFrame === 0 ? SPRITES.death1 : SPRITES.death2;
         const deathW = deathPattern[0].length * deathScale;
         const deathH = deathPattern.length * deathScale;
         drawSprite(ctx, deathPattern, centerX - deathW / 2, centerY - deathH / 2, deathScale, COLORS.player);
 
         // Drift fragments outward
-        const fragmentCount = 4;
-        for (let i = 0; i < fragmentCount; i++) {
-          const angle = (i / fragmentCount) * Math.PI * 2 + t * 0.5;
-          const dist = t * 30;
-          const fx = centerX + Math.cos(angle) * dist;
-          const fy = centerY + Math.sin(angle) * dist;
+        const fragments = computePlayerDeathFragments(centerX, centerY, t);
+        for (const frag of fragments) {
           ctx.globalAlpha = deathAlpha * 0.7;
           ctx.fillStyle = COLORS.player;
-          ctx.fillRect(fx - 2, fy - 2, 4, 4);
+          ctx.fillRect(frag.x - 2, frag.y - 2, 4, 4);
         }
 
         ctx.globalAlpha = 1;
@@ -152,7 +155,8 @@ export class RenderingSystem {
     }
 
     // Thrust flame (drawn BEFORE ship so it appears behind)
-    const thrustPattern = Math.floor(now / 100) % 2 === 0 ? SPRITES.thrust1 : SPRITES.thrust2;
+    const thrustFrame = computeAnimationFrameIndex(now, 100, 2);
+    const thrustPattern = thrustFrame === 0 ? SPRITES.thrust1 : SPRITES.thrust2;
     const thrustScale = GAME_CONFIG.player.drawScale;
     const thrustW = thrustPattern[0].length * thrustScale;
     drawSprite(ctx, thrustPattern, centerX - thrustW / 2, player.y + player.h, thrustScale, '#f97316');
@@ -160,23 +164,19 @@ export class RenderingSystem {
     // Shield aura — shimmering energy ring with 6 dots
     if (hasShieldAura && invulnerableTime <= 0) {
       ctx.save();
-      const auraRadius = Math.max(player.w, player.h) * 0.75;
-      for (let i = 0; i < 6; i++) {
-        const angle = (i / 6) * Math.PI * 2 + now * 0.003;
-        const dotX = centerX + Math.cos(angle) * auraRadius;
-        const dotY = centerY + Math.sin(angle) * auraRadius;
-        const dotAlpha = 0.3 + 0.5 * Math.abs(Math.sin(now * 0.005 + i * 1.1));
-        ctx.globalAlpha = dotAlpha;
+      const dots = computeShieldAuraDots(centerX, centerY, player.w, player.h, now);
+      for (const dot of dots) {
+        ctx.globalAlpha = dot.alpha;
         ctx.fillStyle = '#3b82f6';
         ctx.beginPath();
-        ctx.arc(dotX, dotY, 2, 0, Math.PI * 2);
+        ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
     }
 
     // Draw the ship
-    drawPlayer(ctx, player);
+    drawSprite(ctx, SPRITES.player, player.x, player.y, GAME_CONFIG.player.drawScale, COLORS.player);
     ctx.globalAlpha = 1;
   }
 
@@ -185,14 +185,13 @@ export class RenderingSystem {
     for (const p of powerUps) {
       const { color, label } = POWER_UP_VISUALS[p.type];
       const spriteScale = 2;
-      const spawnPhase = p.spawnedAt * 0.001;
 
       const centerX = p.x + p.w / 2;
       const centerY = p.y + p.h / 2;
 
       // Pulsing glow ring — subtle, radius ~1.3x sprite
       const glowRadius = Math.max(p.w, p.h) * 0.65;
-      const glowAlpha = 0.3 + 0.4 * Math.abs(Math.sin(now * 0.004 + spawnPhase));
+      const glowAlpha = computePowerUpGlowAlpha(now, p.spawnedAt);
       ctx.save();
       ctx.globalAlpha = glowAlpha;
       ctx.strokeStyle = color;
@@ -224,18 +223,11 @@ export class RenderingSystem {
       const glowColor = b.owner === 'player' ? 'rgba(250, 204, 21, ' : 'rgba(248, 113, 113, ';
 
       // Draw trail
-      for (let t = 0; t < b.trail.length; t++) {
-        const entry = b.trail[t];
-        const trailAlpha = (t / b.trail.length) * 0.35;
-        ctx.globalAlpha = trailAlpha;
-        const trailShrink = Math.max(1, b.w * (0.3 + 0.7 * (t / b.trail.length)));
+      const trailEntries = computeBulletTrailEntries(b.trail, b.w, b.h);
+      for (const entry of trailEntries) {
+        ctx.globalAlpha = entry.alpha;
         ctx.fillStyle = bulletColor;
-        ctx.fillRect(
-          entry.x + (b.w - trailShrink) / 2,
-          entry.y,
-          trailShrink,
-          b.h
-        );
+        ctx.fillRect(entry.x, entry.y, entry.w, entry.h);
       }
       ctx.globalAlpha = 1;
 
@@ -304,10 +296,10 @@ export class RenderingSystem {
     ctx.fillStyle = COLORS.text;
     ctx.font = '18px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`SCORE ${score.toString().padStart(5, '0')}`, 20, 28);
+    ctx.fillText(`SCORE ${formatPaddedScore(score)}`, 20, 28);
     ctx.fillText(`LEVEL ${level}`, 20, 50);
     ctx.textAlign = 'center';
-    ctx.fillText(`HIGH ${highScore.toString().padStart(5, '0')}`, GAME_CONFIG.canvas.width / 2, 28);
+    ctx.fillText(`HIGH ${formatPaddedScore(highScore)}`, GAME_CONFIG.canvas.width / 2, 28);
     ctx.textAlign = 'right';
     ctx.fillText(`LIVES ${lives}`, GAME_CONFIG.canvas.width - 20, 28);
   }
@@ -343,13 +335,12 @@ export class RenderingSystem {
     // Shimmer highlight — diagonal translucent band sweeping across the text
     ctx.save();
     const textWidth = ctx.measureText(titleText).width;
-    const sweepPos = ((now * 0.12) % (textWidth + 200)) - 100;
-    const bandWidth = 80;
+    const { sweepPos, bandWidth: bw } = computeShimmerSweep(now, textWidth);
     ctx.beginPath();
-    ctx.moveTo(centerX - textWidth / 2 + sweepPos - bandWidth / 2, titleY - 50);
-    ctx.lineTo(centerX - textWidth / 2 + sweepPos + bandWidth / 2, titleY - 50);
-    ctx.lineTo(centerX - textWidth / 2 + sweepPos + bandWidth / 2 + 20, titleY + 10);
-    ctx.lineTo(centerX - textWidth / 2 + sweepPos - bandWidth / 2 + 20, titleY + 10);
+    ctx.moveTo(centerX - textWidth / 2 + sweepPos - bw / 2, titleY - 50);
+    ctx.lineTo(centerX - textWidth / 2 + sweepPos + bw / 2, titleY - 50);
+    ctx.lineTo(centerX - textWidth / 2 + sweepPos + bw / 2 + 20, titleY + 10);
+    ctx.lineTo(centerX - textWidth / 2 + sweepPos - bw / 2 + 20, titleY + 10);
     ctx.closePath();
     ctx.clip();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
@@ -365,13 +356,13 @@ export class RenderingSystem {
     drawSprite(ctx, SPRITES.player, playerDrawX, playerDrawY, playerSpriteScale, COLORS.player);
 
     // Thrust flicker
-    if (Math.sin(now * 0.02) > 0) {
+    if (computeThrustFlicker(now)) {
       ctx.fillStyle = '#facc15';
       ctx.fillRect(centerX - 3, playerDrawY + playerH, 6, 4);
     }
 
     // --- Blinking "Press SPACE" prompt ---
-    const blinkAlpha = 0.4 + 0.6 * Math.abs(Math.sin(now * 0.003));
+    const blinkAlpha = computeBlinkAlpha(now);
     ctx.globalAlpha = blinkAlpha;
     ctx.fillStyle = COLORS.text;
     ctx.font = '20px monospace';
@@ -392,7 +383,7 @@ export class RenderingSystem {
       for (let i = 0; i < leaderboard.length; i++) {
         ctx.fillStyle = i === 0 ? '#facc15' : i === 1 ? '#94a3b8' : i === 2 ? '#d97706' : COLORS.text;
         ctx.fillText(
-          `${(i + 1).toString().padStart(2, ' ')}. ${leaderboard[i].name.padEnd(maxLen)}  ${leaderboard[i].score.toString().padStart(6, '0')}`,
+          `${(i + 1).toString().padStart(2, ' ')}. ${leaderboard[i].name.padEnd(maxLen)}  ${formatPaddedScore(leaderboard[i].score, 6)}`,
           centerX,
           330 + i * 24
         );
@@ -405,7 +396,7 @@ export class RenderingSystem {
     const elapsed = now - screenOpenedAt;
 
     // Overlay fades in from 0 → 0.75 over ~400ms
-    const overlayAlpha = Math.min(0.75, (elapsed / 400) * 0.75);
+    const overlayAlpha = computeFadeInAlpha(elapsed);
     ctx.fillStyle = `rgba(0,0,0,${overlayAlpha})`;
     ctx.fillRect(0, 0, GAME_CONFIG.canvas.width, GAME_CONFIG.canvas.height);
 
@@ -418,8 +409,7 @@ export class RenderingSystem {
     ctx.fillText('GAME OVER', centerX, GAME_CONFIG.canvas.height / 2 - 20);
 
     // Final score with scale-up animation (starts at 1.3×, settles to 1.0× over ~300ms)
-    const scaleProgress = Math.min(1, elapsed / 300);
-    const scoreScale = 1.3 - 0.3 * scaleProgress;
+    const { scale: scoreScale } = computeScaleUpAnimation(elapsed);
     ctx.save();
     ctx.translate(centerX, GAME_CONFIG.canvas.height / 2 + 30);
     ctx.scale(scoreScale, scoreScale);
@@ -429,7 +419,7 @@ export class RenderingSystem {
     ctx.restore();
 
     // Blinking "Press SPACE to continue"
-    const blinkAlpha = 0.4 + 0.6 * Math.abs(Math.sin(now * 0.003));
+    const blinkAlpha = computeBlinkAlpha(now);
     ctx.globalAlpha = blinkAlpha;
     ctx.fillStyle = COLORS.text;
     ctx.font = '18px monospace';
@@ -442,7 +432,7 @@ export class RenderingSystem {
     const elapsed = now - screenOpenedAt;
 
     // Overlay fades in from 0 → 0.85 over ~400ms
-    const overlayAlpha = Math.min(0.85, (elapsed / 400) * 0.85);
+    const overlayAlpha = computeFadeInAlpha(elapsed, 400, 0.85);
     ctx.fillStyle = `rgba(0,0,0,${overlayAlpha})`;
     ctx.fillRect(0, 0, GAME_CONFIG.canvas.width, GAME_CONFIG.canvas.height);
 
@@ -465,7 +455,7 @@ export class RenderingSystem {
     ctx.strokeRect(inputX, inputY, inputW, inputH);
     ctx.font = '22px monospace';
     ctx.fillStyle = COLORS.player;
-    const caretAlpha = 0.4 + 0.6 * Math.abs(Math.sin(now * 0.004));
+    const caretAlpha = computeBlinkAlpha(now, 0.004);
     ctx.globalAlpha = caretAlpha;
     ctx.fillText(pendingName + '|', GAME_CONFIG.canvas.width / 2, inputY + 26);
     ctx.globalAlpha = 1;

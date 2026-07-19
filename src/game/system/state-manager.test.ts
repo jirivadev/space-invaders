@@ -1,49 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GameStateManager, setGameOver, resetHighScoreCache } from './state-manager';
+import { createInitialState, setPlaying, setMenu, setGameOver, resetHighScoreCache } from './state-manager';
 import { HIGH_SCORE_KEY, LEADERBOARD_KEY } from '../config';
-import type { GameState } from '../types';
-
-function createMockState(overrides: Partial<GameState> = {}): GameState {
-  return {
-    status: 'playing',
-    score: 0,
-    highScore: 0,
-    level: 1,
-    levelAnnounceTimer: 0,
-    lives: 3,
-    aliens: [],
-    bullets: [],
-    shields: [],
-    ufo: null,
-    particles: [],
-    player: {
-      x: 100,
-      y: 500,
-      w: 27,
-      h: 21,
-      speed: 5,
-      cooldown: 0,
-      invulnerable: 0,
-      diedAt: 0,
-    },
-    keys: {},
-    alienDir: 1,
-    alienStepTimer: 0,
-    alienFrame: 0,
-    alienMoveDown: false,
-    ufoTimer: 0,
-    alienShootTimer: 0,
-    stars: [],
-    powerUps: [],
-    activePowerUps: { rapidFire: 0, shield: 0 },
-    pendingName: '',
-    lastTime: 0,
-    initialized: false,
-    leaderboardCache: [],
-    screenOpenedAt: 0,
-    ...overrides,
-  };
-}
+import { createMockState } from '../test-utils/factory';
 
 function makeMockStorage() {
   const store: Record<string, string> = {};
@@ -132,80 +90,71 @@ describe('state-manager', () => {
     });
   });
 
-  describe('GameStateManager.createInitialState', () => {
+  describe('createInitialState', () => {
     it('populates leaderboardCache from localStorage', () => {
       mock.store[LEADERBOARD_KEY] = JSON.stringify([
         { name: 'AAA', score: 100, date: 1 },
         { name: 'BBB', score: 50, date: 2 },
       ]);
-      const mgr = new GameStateManager();
-      const g = mgr.createInitialState();
+      const g = createInitialState();
       expect(g.leaderboardCache).toHaveLength(2);
       expect(g.leaderboardCache[0].name).toBe('AAA');
     });
 
     it('reads high score from localStorage', () => {
       mock.store[HIGH_SCORE_KEY] = '7777';
-      const mgr = new GameStateManager();
-      const g = mgr.createInitialState();
+      const g = createInitialState();
       expect(g.highScore).toBe(7777);
     });
 
     it('falls back to 0 when localStorage value is not a finite number', () => {
       mock.store[HIGH_SCORE_KEY] = 'not-a-number';
-      const mgr = new GameStateManager();
-      const g = mgr.createInitialState();
+      const g = createInitialState();
       expect(g.highScore).toBe(0);
     });
 
     it('applies passed score, lives, and status', () => {
-      const mgr = new GameStateManager();
-      const g = mgr.createInitialState(123, 2, 'gameover');
+      const g = createInitialState(123, 2, 'gameover');
       expect(g.score).toBe(123);
       expect(g.lives).toBe(2);
       expect(g.status).toBe('gameover');
     });
 
     it('uses default values when no arguments provided', () => {
-      const mgr = new GameStateManager();
-      const g = mgr.createInitialState();
+      const g = createInitialState();
       expect(g.score).toBe(0);
       expect(g.lives).toBe(3);
       expect(g.status).toBe('menu');
     });
 
     it('initializes GameState.initialized to false', () => {
-      const mgr = new GameStateManager();
-      const g = mgr.createInitialState();
+      const g = createInitialState();
       expect(g.initialized).toBe(false);
     });
 
     it('creates 4 shields at SHIELD_POSITIONS', () => {
-      const mgr = new GameStateManager();
-      const g = mgr.createInitialState();
+      const g = createInitialState();
       expect(g.shields).toHaveLength(4);
     });
   });
 
-  describe('GameStateManager.setPlaying', () => {
+  describe('setPlaying', () => {
     it('flips status to "playing" and clears levelAnnounceTimer', () => {
-      const mgr = new GameStateManager();
       const g = createMockState({ status: 'menu', levelAnnounceTimer: 999 });
-      mgr.setPlaying(g);
+      setPlaying(g);
       expect(g.status).toBe('playing');
       expect(g.levelAnnounceTimer).toBe(0);
     });
   });
 
-  describe('GameStateManager.setMenu', () => {
+  describe('setMenu', () => {
     it('flips status to "menu" and clears the UFO', () => {
-      const mgr = new GameStateManager();
       const g = createMockState({
         status: 'gameover',
         ufo: { x: 0, y: 0, w: 48, h: 24, dx: 2.5, dyingAt: 0 },
         levelAnnounceTimer: 500,
       });
-      mgr.setMenu(g);
+      setMenu(g);
       expect(g.status).toBe('menu');
       expect(g.ufo).toBeNull();
       expect(g.levelAnnounceTimer).toBe(0);

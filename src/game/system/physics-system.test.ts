@@ -1,75 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PhysicsSystem } from './physics-system';
 import { GAME_CONFIG } from '../config';
-import type { GameState, Bullet, Alien } from '../types';
-
-function makeBullet(overrides: Partial<Bullet> = {}): Bullet {
-  return {
-    x: 100,
-    y: 200,
-    w: 4,
-    h: 12,
-    dy: -9,
-    owner: 'player',
-    trail: [{ x: 100, y: 200 }],
-    ...overrides,
-  };
-}
-
-function makeAlien(overrides: Partial<Alien> = {}): Alien {
-  return {
-    x: 100,
-    y: 100,
-    w: 27,
-    h: 24,
-    type: 'squid',
-    alive: true,
-    dyingAt: 0,
-    ...overrides,
-  };
-}
-
-function createMockState(overrides: Partial<GameState> = {}): GameState {
-  return {
-    status: 'playing',
-    score: 0,
-    highScore: 0,
-    level: 1,
-    levelAnnounceTimer: 0,
-    lives: 3,
-    aliens: [],
-    bullets: [],
-    shields: [],
-    ufo: null,
-    particles: [],
-    player: {
-      x: 100,
-      y: 500,
-      w: 27,
-      h: 21,
-      speed: 5,
-      cooldown: 0,
-      invulnerable: 0,
-      diedAt: 0,
-    },
-    keys: {},
-    alienDir: 1,
-    alienStepTimer: 0,
-    alienFrame: 0,
-    alienMoveDown: false,
-    ufoTimer: 0,
-    alienShootTimer: 0,
-    stars: [],
-    powerUps: [],
-    activePowerUps: { rapidFire: 0, shield: 0 },
-    pendingName: '',
-    lastTime: 0,
-    initialized: false,
-    leaderboardCache: [],
-    screenOpenedAt: 0,
-    ...overrides,
-  };
-}
+import { createMockState, makeBullet, makeAlien } from '../test-utils/factory';
 
 describe('PhysicsSystem', () => {
   let system: PhysicsSystem;
@@ -277,6 +209,31 @@ describe('PhysicsSystem', () => {
       // Subsequent calls should have no effect
       system.updateCooldowns(g, 100);
       expect(g.player.cooldown).toBe(0);
+    });
+
+    it('decrements rapidFire by dt when > 0', () => {
+      const g = createMockState({ activePowerUps: { rapidFire: 100, shield: 0 } });
+      system.updateCooldowns(g, 16);
+      expect(g.activePowerUps.rapidFire).toBe(84);
+    });
+
+    it('decrements shield by dt when > 0', () => {
+      const g = createMockState({ activePowerUps: { rapidFire: 0, shield: 100 } });
+      system.updateCooldowns(g, 16);
+      expect(g.activePowerUps.shield).toBe(84);
+    });
+
+    it('clamps rapidFire at 0 when decrement would go negative', () => {
+      const g = createMockState({ activePowerUps: { rapidFire: 5, shield: 0 } });
+      system.updateCooldowns(g, 16);
+      expect(g.activePowerUps.rapidFire).toBe(0);
+    });
+
+    it('leaves inactive power-up timers at 0 (no underflow)', () => {
+      const g = createMockState({ activePowerUps: { rapidFire: 0, shield: 0 } });
+      system.updateCooldowns(g, 16);
+      expect(g.activePowerUps.rapidFire).toBe(0);
+      expect(g.activePowerUps.shield).toBe(0);
     });
   });
 

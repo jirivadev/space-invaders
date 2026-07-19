@@ -59,13 +59,4 @@ export class CollisionSystem {
   checkPowerUpCollision(powerUp: PowerUp, player: Player): boolean {
     return rectsOverlap(powerUp, player);
   }
-
-  applyPowerUps(state: GameState, dt: number): void {
-    if (state.activePowerUps.rapidFire > 0) {
-      state.activePowerUps.rapidFire = Math.max(0, state.activePowerUps.rapidFire - dt);
-    }
-    if (state.activePowerUps.shield > 0) {
-      state.activePowerUps.shield = Math.max(0, state.activePowerUps.shield - dt);
-    }
-  }
 }

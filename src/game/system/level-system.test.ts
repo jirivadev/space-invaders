@@ -1,62 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LevelSystem } from './level-system';
 import { GAME_CONFIG } from '../config';
-import type { GameState, Alien } from '../types';
-
-function makeAlien(overrides: Partial<Alien> = {}): Alien {
-  return {
-    x: 100,
-    y: 100,
-    w: 27,
-    h: 24,
-    type: 'squid',
-    alive: true,
-    dyingAt: 0,
-    ...overrides,
-  };
-}
-
-function createMockState(overrides: Partial<GameState> = {}): GameState {
-  return {
-    status: 'playing',
-    score: 0,
-    highScore: 0,
-    level: 1,
-    levelAnnounceTimer: 0,
-    lives: 3,
-    aliens: [],
-    bullets: [],
-    shields: [],
-    ufo: null,
-    particles: [],
-    player: {
-      x: 100,
-      y: 500,
-      w: 27,
-      h: 21,
-      speed: 5,
-      cooldown: 0,
-      invulnerable: 0,
-      diedAt: 0,
-    },
-    keys: {},
-    alienDir: 1,
-    alienStepTimer: 0,
-    alienFrame: 0,
-    alienMoveDown: false,
-    ufoTimer: 0,
-    alienShootTimer: 0,
-    stars: [],
-    powerUps: [],
-    activePowerUps: { rapidFire: 0, shield: 0 },
-    pendingName: '',
-    lastTime: 0,
-    initialized: false,
-    leaderboardCache: [],
-    screenOpenedAt: 0,
-    ...overrides,
-  };
-}
+import { createMockState, makeAlien } from '../test-utils/factory';
 
 describe('LevelSystem', () => {
   let system: LevelSystem;

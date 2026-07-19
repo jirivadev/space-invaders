@@ -67,6 +67,9 @@ const BOMB_PARTICLES_PER_ALIEN = 2;
 const MAX_PARTICLES = 500;
 const PARTICLE_LIFE_DECAY_PER_FRAME = 60;
 
+const DEATH_ANIMATION_DURATION = 150;
+const PLAYER_DEATH_DURATION = 300;
+
 /**
  * Complete game configuration object
  * Use this for organizing all tunable game parameters
@@ -148,6 +151,13 @@ export const GAME_CONFIG = {
   ui: {
     invulnerabilityBlinkInterval: 80,  // milliseconds
     nameEntryMaxChars: PLAYER_NAME_MAX_LENGTH,
+  },
+
+  // Death animation durations (ms)
+  death: {
+    alienDuration: DEATH_ANIMATION_DURATION,
+    ufoDuration: DEATH_ANIMATION_DURATION,
+    playerDuration: PLAYER_DEATH_DURATION,
   },
 } as const;
 

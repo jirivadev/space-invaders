@@ -174,5 +174,7 @@ export class PhysicsSystem {
   // Time-based cooldown countdown
   updateCooldowns(g: GameState, dt: number): void {
     if (g.player.cooldown > 0) g.player.cooldown = Math.max(0, g.player.cooldown - dt);
+    if (g.activePowerUps.rapidFire > 0) g.activePowerUps.rapidFire = Math.max(0, g.activePowerUps.rapidFire - dt);
+    if (g.activePowerUps.shield > 0) g.activePowerUps.shield = Math.max(0, g.activePowerUps.shield - dt);
   }
 }
