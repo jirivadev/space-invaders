@@ -50,3 +50,17 @@ Run a single test: `npx vitest run src/game/engine.test.ts`
 ## Graphics Improvements
 
 See `GRAPHICS_IMPROVEMENT_PLAN.md` (gitignored) for phased visual polish roadmap. Current implementation uses pure Canvas 2D with ~12-color palette.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (uses `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout (one `CONTEXT.md` + `docs/adr/` at repo root). See `docs/agents/domain.md`.
