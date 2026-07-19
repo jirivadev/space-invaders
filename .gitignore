@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+.codegraph/
+
+# Docs
+GRAPHICS_IMPROVEMENT_PLAN.md

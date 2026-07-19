@@ -23,7 +23,6 @@ export function drawSprite(
 }
 
 export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player) {
-  const scale = GAME_CONFIG.player.drawScale;
   const pattern = [
     '----x----',
     '---xxx---',
@@ -33,15 +32,7 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, player: Player) {
     'x-xxx-x-',
     'x-x-x-x-',
   ];
-  ctx.fillStyle = COLORS.player;
-  for (let r = 0; r < pattern.length; r++) {
-    const row = pattern[r];
-    for (let c = 0; c < row.length; c++) {
-      if (row[c] === 'x') {
-        ctx.fillRect(player.x + c * scale, player.y + r * scale, scale, scale);
-      }
-    }
-  }
+  drawSprite(ctx, pattern, player.x, player.y, GAME_CONFIG.player.drawScale, COLORS.player);
 }
 
 export function drawShield(ctx: CanvasRenderingContext2D, shield: Shield) {

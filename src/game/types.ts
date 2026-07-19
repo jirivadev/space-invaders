@@ -23,6 +23,7 @@ export interface Alien {
   h: number;
   type: 'squid' | 'crab' | 'octopus';
   alive: boolean;
+  dyingAt: number;
 }
 
 export interface Bullet {
@@ -50,6 +51,7 @@ export interface UFO {
   w: number;
   h: number;
   dx: number;
+  dyingAt: number;
 }
 
 export type ParticleType = 'spark' | 'debris' | 'fire' | 'flash';
@@ -74,6 +76,7 @@ export interface Player {
   speed: number;
   cooldown: number;
   invulnerable: number;
+  diedAt: number;
 }
 
 export interface Star {
@@ -93,6 +96,7 @@ export interface PowerUp {
   h: number;
   dy: number;
   type: PowerUpType;
+  spawnedAt: number;
 }
 
 export interface GameState {
@@ -125,6 +129,7 @@ export interface GameState {
   lastTime: number;
   initialized: boolean;
   leaderboardCache: LeaderboardEntry[];
+  screenOpenedAt: number;
 }
 
 export interface UIState {

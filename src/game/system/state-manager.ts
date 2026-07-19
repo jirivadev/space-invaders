@@ -27,6 +27,7 @@ export class GameStateManager {
         speed: GAME_CONFIG.player.speed,
         cooldown: 0,
         invulnerable: 0,
+        diedAt: 0,
       },
       keys: {},
       alienDir: 1,
@@ -45,6 +46,7 @@ export class GameStateManager {
       lastTime: 0,
       initialized: false,
       leaderboardCache: getLeaderboard(),
+      screenOpenedAt: performance.now(),
     };
   }
 
@@ -59,12 +61,14 @@ export class GameStateManager {
     g.status = 'menu';
     g.levelAnnounceTimer = 0;
     g.ufo = null;
+    g.screenOpenedAt = performance.now();
   }
 
 }
 
 export function setGameOver(g: GameState, saveHighScore: boolean = true) {
   if (g.status === 'gameover' || g.status === 'nameEntry') return;
+  g.screenOpenedAt = performance.now();
   const isNewHighScore = saveHighScore && g.score > g.highScore;
   if (isNewHighScore) {
     g.highScore = g.score;

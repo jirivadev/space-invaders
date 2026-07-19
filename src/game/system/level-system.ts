@@ -26,7 +26,7 @@ function getLevelConfig(level: number): LevelConfig {
 
 export class LevelSystem {
   checkLevelComplete(g: GameState): boolean {
-    const aliveAliens = g.aliens.filter((a) => a.alive);
+    const aliveAliens = g.aliens.filter((a) => a.alive && a.dyingAt === 0);
     if (aliveAliens.length === 0) {
       g.level++;
       g.levelAnnounceTimer = 2000;
@@ -91,7 +91,7 @@ export class LevelSystem {
 
   // Check for alien reaching player
   checkAlienReachedPlayer(g: GameState): void {
-    const aliveAliens = g.aliens.filter((a) => a.alive);
+    const aliveAliens = g.aliens.filter((a) => a.alive && a.dyingAt === 0);
     for (const a of aliveAliens) {
       if (a.y + a.h >= GAME_CONFIG.canvas.groundY) {
         setGameOver(g);
@@ -102,7 +102,7 @@ export class LevelSystem {
 
   // Alien bullet spawning logic
   spawnAlienBullet(g: GameState): void {
-    const aliveAliens = g.aliens.filter((a) => a.alive);
+    const aliveAliens = g.aliens.filter((a) => a.alive && a.dyingAt === 0);
     if (aliveAliens.length === 0) return;
 
     const levelConfig = getLevelConfig(g.level);
@@ -143,7 +143,7 @@ export class LevelSystem {
 
   // Alien shooting timer management
   updateAlienShootingTimer(g: GameState, now: number): void {
-    const aliveAliens = g.aliens.filter((a) => a.alive);
+    const aliveAliens = g.aliens.filter((a) => a.alive && a.dyingAt === 0);
     if (aliveAliens.length === 0) {
       g.alienShootTimer = 0;
       return;

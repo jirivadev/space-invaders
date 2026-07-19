@@ -1,5 +1,5 @@
 import type { GameState, GameStatus, GameCallbacks } from './types';
-import { GAME_CONFIG, STAR_LAYERS } from './config';
+import { GAME_CONFIG, STAR_LAYERS, COLORS } from './config';
 import { InputHandler } from './system/input-handler';
 import { CollisionSystem } from './system/collision-system';
 import { PhysicsSystem } from './system/physics-system';
@@ -140,6 +140,31 @@ export class GameEngine {
     this.physicsSystem.damageShieldsWithAliens(g);
 
     // Collision detection - Bullets vs Game Objects
+    this._handleBulletCollisions(g);
+
+    // Power-up collision
+    this._handlePowerUpCollisions(g);
+
+    // Check if aliens reached player
+    this.levelSystem.checkAlienReachedPlayer(g);
+
+    // Update particles
+    this.physicsSystem.updateParticles(g, moveScale);
+
+    // Process dying aliens — spawn explosion after flash duration
+    const now = performance.now();
+    this._processDyingAliens(g, now);
+
+    // Process dying UFO — spawn explosion after flash duration
+    this._processDyingUFO(g, now);
+
+    // Process player death — spawn explosion after death animation
+    this._processPlayerDeath(g, now);
+
+    this._notifyUI();
+  }
+
+  private _handleBulletCollisions(g: GameState): void {
     for (let i = g.bullets.length - 1; i >= 0; i--) {
       const b = g.bullets[i];
 
@@ -185,21 +210,24 @@ export class GameEngine {
           }
           g.lives--;
           g.player.invulnerable = 2000;
-          g.particles.push(...createExplosionParticles(g.player.x + g.player.w / 2, g.player.y + g.player.h / 2, '#67e8f9', 50));
-          g.particles.push(createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, '#fca5a5', 14));
           this.physicsSystem.triggerShake( 5, 130);
           g.bullets.splice(i, 1);
 
           if (g.lives <= 0) {
             this.physicsSystem.triggerShake( 8, 250);
-            setGameOver(g);
+            g.player.diedAt = performance.now();
+          } else {
+            // Non-lethal hit: spawn hit particles immediately
+            g.particles.push(...createExplosionParticles(g.player.x + g.player.w / 2, g.player.y + g.player.h / 2, '#67e8f9', 50));
+            g.particles.push(createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, '#fca5a5', 14));
           }
           continue;
         }
       }
     }
+  }
 
-    // Power-up collision
+  private _handlePowerUpCollisions(g: GameState): void {
     for (let i = g.powerUps.length - 1; i >= 0; i--) {
       const p = g.powerUps[i];
       if (this.collisionSystem.checkPowerUpCollision(p, g.player)) {
@@ -215,14 +243,40 @@ export class GameEngine {
         g.powerUps.splice(i, 1);
       }
     }
+  }
 
-    // Check if aliens reached player
-    this.levelSystem.checkAlienReachedPlayer(g);
+  private _processDyingAliens(g: GameState, now: number): void {
+    const ALIEN_DEATH_DURATION = 150;
+    for (let i = g.aliens.length - 1; i >= 0; i--) {
+      const a = g.aliens[i];
+      if (a.dyingAt > 0 && now - a.dyingAt >= ALIEN_DEATH_DURATION) {
+        a.alive = false;
+        a.dyingAt = 0;
+        g.particles.push(...createExplosionParticles(a.x + a.w / 2, a.y + a.h / 2, COLORS[a.type], 40));
+      }
+    }
+  }
 
-    // Update particles
-    this.physicsSystem.updateParticles(g, moveScale);
+  private _processDyingUFO(g: GameState, now: number): void {
+    if (!g.ufo || g.ufo.dyingAt === 0) return;
+    const UFO_DEATH_DURATION = 150;
+    if (now - g.ufo.dyingAt >= UFO_DEATH_DURATION) {
+      g.particles.push(...createExplosionParticles(g.ufo!.x + g.ufo!.w / 2, g.ufo!.y + g.ufo!.h / 2, COLORS.ufo, 40));
+      g.ufo = null;
+    }
+  }
 
-    this._notifyUI();
+  private _processPlayerDeath(g: GameState, now: number): void {
+    if (g.player.diedAt === 0) return;
+    const DEATH_ANIM_DURATION = 300;
+    if (now - g.player.diedAt >= DEATH_ANIM_DURATION) {
+      // Spawn death explosion particles
+      g.particles.push(...createExplosionParticles(g.player.x + g.player.w / 2, g.player.y + g.player.h / 2, '#67e8f9', 50));
+      g.particles.push(createImpactFlash(g.player.x + g.player.w / 2, g.player.y + g.player.h / 2, '#fca5a5', 14));
+      g.player.diedAt = 0;
+      // Now transition to game over
+      setGameOver(g);
+    }
   }
 
   private _handleStateTransitions(g: GameState): void {
@@ -254,6 +308,8 @@ export class GameEngine {
     const ctx = this.ctx;
     if (!ctx) return;
 
+    const now = performance.now();
+
     // Clear and apply shake
     this.renderingSystem.clearCanvas(ctx);
     const shakeX = this.physicsSystem.getShakeX();
@@ -265,13 +321,14 @@ export class GameEngine {
     }
 
     // Draw game elements
-    this.renderingSystem.drawStars(ctx, g.stars, Date.now());
+    const isOverlay = g.status === 'menu' || g.status === 'gameover' || g.status === 'nameEntry';
+    this.renderingSystem.drawStars(ctx, g.stars, now, isOverlay ? 0.5 : 1);
     this.renderingSystem.drawGround(ctx);
     this.renderingSystem.drawShields(ctx, g.shields);
-    this.renderingSystem.drawAliens(ctx, g.aliens, g.alienFrame);
-    this.renderingSystem.drawUFO(ctx, g.ufo);
-    this.renderingSystem.drawPlayer(ctx, g.player, g.player.invulnerable, g.activePowerUps.shield > 0);
-    this.renderingSystem.drawPowerUps(ctx, g.powerUps);
+    this.renderingSystem.drawAliens(ctx, g.aliens, g.alienFrame, now);
+    this.renderingSystem.drawUFO(ctx, g.ufo, now);
+    this.renderingSystem.drawPlayer(ctx, g.player, g.player.invulnerable, g.activePowerUps.shield > 0, now);
+    this.renderingSystem.drawPowerUps(ctx, g.powerUps, now);
     this.renderingSystem.drawBullets(ctx, g.bullets);
     this.renderingSystem.drawParticles(ctx, g.particles);
     this.renderingSystem.drawHUD(ctx, g.score, g.highScore, g.lives, g.level);
@@ -279,11 +336,11 @@ export class GameEngine {
 
     // Draw screens based on status
     if (g.status === 'menu') {
-      this.renderingSystem.drawMenu(ctx, g.leaderboardCache);
+      this.renderingSystem.drawMenu(ctx, g.leaderboardCache, now);
     } else if (g.status === 'gameover') {
-      this.renderingSystem.drawGameOver(ctx, g.score);
+      this.renderingSystem.drawGameOver(ctx, g.score, now, g.screenOpenedAt);
     } else if (g.status === 'nameEntry') {
-      this.renderingSystem.drawNameEntry(ctx, g.pendingName, g.score);
+      this.renderingSystem.drawNameEntry(ctx, g.pendingName, g.score, now, g.screenOpenedAt);
     }
 
     // Restore from shake

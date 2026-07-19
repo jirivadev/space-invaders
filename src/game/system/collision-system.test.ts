@@ -23,6 +23,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
       speed: 5,
       cooldown: 0,
       invulnerable: 0,
+      diedAt: 0,
     },
     keys: {},
     alienDir: 1,
@@ -38,6 +39,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
     lastTime: 0,
     initialized: false,
     leaderboardCache: [],
+    screenOpenedAt: 0,
     ...overrides,
   };
 }
@@ -63,6 +65,7 @@ function makeAlien(overrides: Partial<Alien> = {}): Alien {
     h: 24,
     type: 'squid',
     alive: true,
+    dyingAt: 0,
     ...overrides,
   };
 }
@@ -76,6 +79,7 @@ function makePlayer(overrides: Partial<Player> = {}): Player {
     speed: 5,
     cooldown: 0,
     invulnerable: 0,
+    diedAt: 0,
     ...overrides,
   };
 }
@@ -87,6 +91,7 @@ function makeUFO(overrides: Partial<UFO> = {}): UFO {
     w: 48,
     h: 24,
     dx: 2.5,
+    dyingAt: 0,
     ...overrides,
   };
 }
@@ -111,6 +116,7 @@ function makePowerUp(overrides: Partial<PowerUp> = {}): PowerUp {
     h: 20,
     dy: 2,
     type: 'rapidFire',
+    spawnedAt: 0,
     ...overrides,
   };
 }
@@ -137,15 +143,16 @@ describe('CollisionSystem', () => {
       expect(system.checkBulletAlienCollision(bullet, alien, state)).toBe(false);
     });
 
-    it('hits a squid: score += 30, alien dies, particles added', () => {
+    it('hits a squid: score += 30, alien starts dying, no particles yet', () => {
       const state = createMockState();
       const bullet = makeBullet({ x: 100, y: 100 });
       const alien = makeAlien({ x: 100, y: 100, type: 'squid' });
       const result = system.checkBulletAlienCollision(bullet, alien, state);
       expect(result).toBe(true);
-      expect(alien.alive).toBe(false);
+      expect(alien.alive).toBe(true); // still alive during death animation
+      expect(alien.dyingAt).toBeGreaterThan(0);
       expect(state.score).toBe(30);
-      expect(state.particles.length).toBeGreaterThan(0);
+      expect(state.particles.length).toBe(0); // particles spawned later by engine
     });
 
     it('hits a crab: score += 20', () => {
@@ -236,7 +243,7 @@ describe('CollisionSystem', () => {
       expect(system.checkBulletUFOCollision(bullet, ufo, state)).toBe(false);
     });
 
-    it('hits UFO: score increased, particles added, powerUps cleared', () => {
+    it('hits UFO: score increased, UFO starts dying, powerUps cleared', () => {
       vi.spyOn(Math, 'random').mockReturnValue(0); // deterministic points index 0 = 50
       const state = createMockState({ powerUps: [makePowerUp(), makePowerUp()] });
       const bullet = makeBullet({ x: 200, y: 35 });
@@ -244,7 +251,8 @@ describe('CollisionSystem', () => {
       const result = system.checkBulletUFOCollision(bullet, ufo, state);
       expect(result).toBe(true);
       expect(state.score).toBe(50);
-      expect(state.particles.length).toBeGreaterThan(0);
+      expect(ufo.dyingAt).toBeGreaterThan(0);
+      expect(state.particles.length).toBe(0); // particles spawned later by engine
       expect(state.powerUps).toHaveLength(0);
       vi.restoreAllMocks();
     });

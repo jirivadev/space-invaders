@@ -24,6 +24,7 @@ function makeAlien(overrides: Partial<Alien> = {}): Alien {
     h: 24,
     type: 'squid',
     alive: true,
+    dyingAt: 0,
     ...overrides,
   };
 }
@@ -49,6 +50,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
       speed: 5,
       cooldown: 0,
       invulnerable: 0,
+      diedAt: 0,
     },
     keys: {},
     alienDir: 1,
@@ -64,6 +66,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
     lastTime: 0,
     initialized: false,
     leaderboardCache: [],
+    screenOpenedAt: 0,
     ...overrides,
   };
 }
@@ -130,14 +133,14 @@ describe('PhysicsSystem', () => {
     });
 
     it('moves existing UFO by dx', () => {
-      const ufo = { x: 100, y: 35, w: 48, h: 24, dx: 2.5 };
+      const ufo = { x: 100, y: 35, w: 48, h: 24, dx: 2.5, dyingAt: 0 };
       const g = createMockState({ ufo, ufoTimer: 5000 });
       system.updateUFO(g, 16);
       expect(g.ufo!.x).toBe(102.5);
     });
 
     it('clears UFO when it exits the canvas', () => {
-      const ufo = { x: 900, y: 35, w: 48, h: 24, dx: 2.5 };
+      const ufo = { x: 900, y: 35, w: 48, h: 24, dx: 2.5, dyingAt: 0 };
       const g = createMockState({ ufo, ufoTimer: 5000 });
       system.updateUFO(g, 16);
       // UFO moves right (dx > 0), x=900 > 800+50, so should be cleared
@@ -146,7 +149,7 @@ describe('PhysicsSystem', () => {
     });
 
     it('does not spawn UFO if ufo is not null', () => {
-      const ufo = { x: 100, y: 35, w: 48, h: 24, dx: 2.5 };
+      const ufo = { x: 100, y: 35, w: 48, h: 24, dx: 2.5, dyingAt: 0 };
       const g = createMockState({ ufo, ufoTimer: 0 });
       system.updateUFO(g, 10);
       // ufo should still be the same object
@@ -242,7 +245,7 @@ describe('PhysicsSystem', () => {
   describe('updatePowerUps', () => {
     it('moves power-ups down by dy * moveScale', () => {
       const g = createMockState({
-        powerUps: [{ x: 100, y: 100, w: 20, h: 20, dy: 2, type: 'rapidFire' as const }],
+        powerUps: [{ x: 100, y: 100, w: 20, h: 20, dy: 2, type: 'rapidFire' as const, spawnedAt: 0 }],
       });
       system.updatePowerUps(g, 1);
       expect(g.powerUps[0].y).toBe(102);
@@ -250,7 +253,7 @@ describe('PhysicsSystem', () => {
 
     it('removes power-ups that fall below the canvas', () => {
       const g = createMockState({
-        powerUps: [{ x: 100, y: 700, w: 20, h: 20, dy: 2, type: 'rapidFire' as const }],
+        powerUps: [{ x: 100, y: 700, w: 20, h: 20, dy: 2, type: 'rapidFire' as const, spawnedAt: 0 }],
       });
       system.updatePowerUps(g, 1);
       expect(g.powerUps).toHaveLength(0);

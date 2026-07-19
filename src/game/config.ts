@@ -1,92 +1,71 @@
+import type { Alien } from './types';
+
 /**
  * Game Configuration
- * 
+ *
  * Centralized configuration for all game constants.
- * Extracted from constants.ts to reduce magic numbers in engine.ts.
- * 
- * @see src/game/constants.ts for original definitions
  */
 
+// Exported individually — these are imported directly by consumer files.
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 640;
-export const GROUND_Y = 600;
-export const TARGET_FPS = 60;
-export const TARGET_DT = 1000 / TARGET_FPS;
-export const MAX_DT = 100;
-
-/**
- * Shield configuration
- */
-export const SHIELD_COLS = 24;
-export const SHIELD_ROWS = 16;
-export const SHIELD_PIXEL_SIZE = 3;
-export const SHIELD_Y = 480;
-
-/**
- * Player configuration
- */
-export const PLAYER_WIDTH = 27;
-export const PLAYER_HEIGHT = 21;
-export const PLAYER_SPEED = 5;
-export const PLAYER_Y_OFFSET = 28;
-export const PLAYER_BOUNDARY_PADDING = 10;
-export const PLAYER_DRAW_SCALE = 3;
-
-/**
- * Bullet configuration
- */
-export const PLAYER_BULLET_WIDTH = 4;
-export const PLAYER_BULLET_HEIGHT = 12;
-export const PLAYER_BULLET_SPEED = -9;
-export const ALIEN_BULLET_WIDTH = 4;
-export const ALIEN_BULLET_HEIGHT = 10;
-
-/**
- * Alien configuration
- */
-export const ALIEN_STEP_X = 8;
-export const ALIEN_STEP_DOWN = 20;
-export const ALIEN_SPRITE_SCALE = 3;
-export const ALIEN_SPACING_X = 3;
-export const ALIEN_SPACING_Y = 3;
-
-/**
- * UFO configuration
- */
-export const UFO_Y = 35;
-export const UFO_SPEED = 2.5;
-
-/**
- * Leaderboard configuration
- */
 export const LEADERBOARD_KEY = 'space-invaders-leaderboard';
 export const HIGH_SCORE_KEY = 'space-invaders-highscore';
 export const MAX_LEADERBOARD_ENTRIES = 10;
-export const PLAYER_NAME_MAX_LENGTH = 8;
-
-/**
- * Timer configurations
- */
 export const UFO_TIMER_MIN = 10000;
 export const UFO_TIMER_RANGE = 15000;
+export const SHIELD_POSITIONS = [110, 290, 470, 650] as const;
 
 /**
- * Cooldown configurations (in milliseconds)
+ * Alien type → point value mapping
  */
-export const PLAYER_SHOOT_COOLDOWN = 333;
-export const RAPID_FIRE_COOLDOWN = 120;
+export const ALIEN_POINTS: Record<Alien['type'], number> = {
+  squid: 30,
+  crab: 20,
+  octopus: 10,
+};
 
-/**
- * Particle configuration
- */
-export const BOMB_PARTICLES_PER_ALIEN = 2;
-export const MAX_PARTICLES = 500;
-export const PARTICLE_LIFE_DECAY_PER_FRAME = 60;
+// Local constants — only used internally to build GAME_CONFIG.
+const GROUND_Y = 600;
+const TARGET_FPS = 60;
+const TARGET_DT = 1000 / TARGET_FPS;
+const MAX_DT = 100;
 
-/**
- * Shield positions (X coordinates for 4 shields)
- */
-export const SHIELD_POSITIONS = [110, 290, 470, 650];
+const SHIELD_COLS = 24;
+const SHIELD_ROWS = 16;
+const SHIELD_PIXEL_SIZE = 3;
+const SHIELD_Y = 480;
+
+const PLAYER_WIDTH = 27;
+const PLAYER_HEIGHT = 21;
+const PLAYER_SPEED = 5;
+const PLAYER_Y_OFFSET = 28;
+const PLAYER_BOUNDARY_PADDING = 10;
+const PLAYER_DRAW_SCALE = 3;
+
+const PLAYER_BULLET_WIDTH = 4;
+const PLAYER_BULLET_HEIGHT = 12;
+const PLAYER_BULLET_SPEED = -9;
+const ALIEN_BULLET_WIDTH = 4;
+const ALIEN_BULLET_HEIGHT = 10;
+
+const ALIEN_STEP_X = 8;
+const ALIEN_STEP_DOWN = 20;
+const ALIEN_SPRITE_SCALE = 3;
+const ALIEN_SPACING_X = 3;
+const ALIEN_SPACING_Y = 3;
+
+const UFO_Y = 35;
+const UFO_SPEED = 2.5;
+
+const PLAYER_NAME_MAX_LENGTH = 8;
+
+const PLAYER_SHOOT_COOLDOWN = 333;
+const RAPID_FIRE_COOLDOWN = 120;
+
+const BOMB_PARTICLES_PER_ALIEN = 2;
+const MAX_PARTICLES = 500;
+const PARTICLE_LIFE_DECAY_PER_FRAME = 60;
 
 /**
  * Complete game configuration object
@@ -219,6 +198,53 @@ export const STAR_LAYERS = [
  * Sprite patterns for aliens
  */
 export const SPRITES = {
+  player: [
+    '----x----',
+    '---xxx---',
+    '--xxxxx--',
+    'xxxxxxxxx',
+    'xxxxxxxxx',
+    'x-xxx-x-',
+    'x-x-x-x-',
+  ],
+  thrust1: [
+    '-x-x-',
+    'xxxxx',
+    '-xxx-',
+    '--x--',
+  ],
+  thrust2: [
+    'x-x-x',
+    '-xxx-',
+    'xxxxx',
+    '-xxx-',
+  ],
+  death1: [
+    'x---x',
+    '-xxx-',
+    'xxxxx',
+    '-xxx-',
+    'x---x',
+  ],
+  death2: [
+    'x-x-x',
+    '-x-x-',
+    'xxxxx',
+    '-x-x-',
+    'x-x-x',
+  ],
+  powerUp: [
+    '--xxxxxx--',
+    '-xxxxxxxx-',
+    'xxxxxxxxxx',
+    'xxxxxxxxxx',
+    'xxxxxxxxxx',
+    'xxxxxxxxxx',
+    'xxxxxxxxxx',
+    'xxxxxxxxxx',
+    '-xxxxxxxx-',
+    '--xxxxxx--',
+  ],
   squid: [
     '---xx---',
     '--xxxx--',

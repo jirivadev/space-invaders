@@ -24,6 +24,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
       speed: 5,
       cooldown: 0,
       invulnerable: 0,
+      diedAt: 0,
     },
     keys: {},
     alienDir: 1,
@@ -39,6 +40,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
     lastTime: 0,
     initialized: false,
     leaderboardCache: [],
+    screenOpenedAt: 0,
     ...overrides,
   };
 }
@@ -191,7 +193,7 @@ describe('InputHandler', () => {
       const g = createMockState({
         status: 'playing',
         keys: { ArrowLeft: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0 },
+        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -202,7 +204,7 @@ describe('InputHandler', () => {
       const g = createMockState({
         status: 'playing',
         keys: { ArrowRight: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0 },
+        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -213,7 +215,7 @@ describe('InputHandler', () => {
       const g = createMockState({
         status: 'playing',
         keys: { ArrowLeft: true },
-        player: { x: GAME_CONFIG.player.boundaryPadding + 1, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0 },
+        player: { x: GAME_CONFIG.player.boundaryPadding + 1, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -224,7 +226,7 @@ describe('InputHandler', () => {
       const g = createMockState({
         status: 'playing',
         keys: { ArrowRight: true },
-        player: { x: GAME_CONFIG.canvas.width - 27 - GAME_CONFIG.player.boundaryPadding - 1, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0 },
+        player: { x: GAME_CONFIG.canvas.width - 27 - GAME_CONFIG.player.boundaryPadding - 1, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -235,7 +237,7 @@ describe('InputHandler', () => {
       const g = createMockState({
         status: 'menu',
         keys: { ArrowLeft: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0 },
+        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -246,7 +248,7 @@ describe('InputHandler', () => {
       const g = createMockState({
         status: 'nameEntry',
         keys: { ArrowLeft: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0 },
+        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -268,7 +270,7 @@ describe('InputHandler', () => {
     });
 
     it('returns false when cooldown is active', () => {
-      const g = createMockState({ keys: { ' ': true }, player: { x: 0, y: 0, w: 27, h: 21, speed: 5, cooldown: 100, invulnerable: 0 } });
+      const g = createMockState({ keys: { ' ': true }, player: { x: 0, y: 0, w: 27, h: 21, speed: 5, cooldown: 100, invulnerable: 0, diedAt: 0 } });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       expect(handler.checkForShoot(g)).toBe(false);
     });

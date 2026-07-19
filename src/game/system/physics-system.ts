@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import { GAME_CONFIG, COLORS, UFO_TIMER_MIN, UFO_TIMER_RANGE } from '../config';
+import { GAME_CONFIG, COLORS, ALIEN_POINTS } from '../config';
 import { rectsOverlap } from '../geometry';
 import { createUFO, createExplosionParticles, damageShieldRect } from './entity-factory';
 import { setGameOver } from './state-manager';
@@ -52,14 +52,14 @@ export class PhysicsSystem {
       const dir = Math.random() < 0.5 ? -1 : 1;
       g.ufo = createUFO();
       g.ufo!.x = dir === 1 ? -g.ufo!.w : GAME_CONFIG.canvas.width;
-      g.ufoTimer = UFO_TIMER_MIN + Math.random() * UFO_TIMER_RANGE;
+        g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
     }
 
     if (g.ufo) {
       g.ufo.x += g.ufo.dx;
       if (g.ufo.x > GAME_CONFIG.canvas.width + 50 || g.ufo.x + g.ufo.w < -50) {
         g.ufo = null;
-        g.ufoTimer = UFO_TIMER_MIN + Math.random() * UFO_TIMER_RANGE;
+      g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
       }
     }
   }
@@ -127,7 +127,7 @@ export class PhysicsSystem {
   // Alien shield damage logic
   damageShieldsWithAliens(g: GameState): void {
     for (const a of g.aliens) {
-      if (!a.alive) continue;
+      if (!a.alive || a.dyingAt > 0) continue;
       if (a.y + a.h >= GAME_CONFIG.canvas.groundY) {
         setGameOver(g);
       }
@@ -146,7 +146,7 @@ export class PhysicsSystem {
     for (const alien of g.aliens) {
       if (alien.alive) {
         alien.alive = false;
-        const points = alien.type === 'squid' ? 30 : alien.type === 'crab' ? 20 : 10;
+        const points = ALIEN_POINTS[alien.type];
         g.score += points;
         g.particles.push(...createExplosionParticles(alien.x + alien.w / 2, alien.y + alien.h / 2, COLORS[alien.type], GAME_CONFIG.particle.bombParticlesPerAlien));
       }

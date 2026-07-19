@@ -24,6 +24,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
       speed: 5,
       cooldown: 0,
       invulnerable: 0,
+      diedAt: 0,
     },
     keys: {},
     alienDir: 1,
@@ -39,6 +40,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
     lastTime: 0,
     initialized: false,
     leaderboardCache: [],
+    screenOpenedAt: 0,
     ...overrides,
   };
 }
@@ -199,7 +201,7 @@ describe('state-manager', () => {
       const mgr = new GameStateManager();
       const g = createMockState({
         status: 'gameover',
-        ufo: { x: 0, y: 0, w: 48, h: 24, dx: 2.5 },
+        ufo: { x: 0, y: 0, w: 48, h: 24, dx: 2.5, dyingAt: 0 },
         levelAnnounceTimer: 500,
       });
       mgr.setMenu(g);

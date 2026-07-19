@@ -6,6 +6,32 @@ import { hexToRgb } from '../geometry';
 
 // ========== Entity Creation ==========
 
+function createFormationGrid(
+  rows: number,
+  colsOrFn: number | ((row: number) => number),
+  spacingX: number,
+  spacingY: number,
+  rowStartX: (row: number, count: number) => number,
+  offsetX: (row: number) => number,
+  rowTypes: ('squid' | 'crab' | 'octopus')[],
+  startY: number,
+  scale: number,
+): Alien[] {
+  const aliens: Alien[] = [];
+  for (let r = 0; r < rows; r++) {
+    const type = rowTypes[r];
+    const pattern = SPRITES[type];
+    const w = pattern[0].length * scale;
+    const h = pattern.length * scale;
+    const count = typeof colsOrFn === 'function' ? colsOrFn(r) : colsOrFn;
+    const x0 = rowStartX(r, count) + offsetX(r);
+    for (let c = 0; c < count; c++) {
+      aliens.push({ x: x0 + c * spacingX, y: startY + r * spacingY, w, h, type, alive: true, dyingAt: 0 });
+    }
+  }
+  return aliens;
+}
+
 export function createShield(x: number, y: number): Shield {
   const cols = GAME_CONFIG.shield.cols;
   const rows = GAME_CONFIG.shield.rows;
@@ -28,83 +54,30 @@ export function createShield(x: number, y: number): Shield {
 export function createAliens(formation: FormationType = 'grid', startY: number = 80): Alien[] {
   const scale = GAME_CONFIG.alien.spriteScale;
   const rowTypes: ('squid' | 'crab' | 'octopus')[] = ['squid', 'crab', 'crab', 'octopus', 'octopus', 'octopus'];
-  const aliens: Alien[] = [];
+  const noop = () => 0;
 
   switch (formation) {
     case 'staggered': {
-      const cols = 11, rows = 5, spacingX = 48, spacingY = 40, startX = 80;
-      for (let r = 0; r < rows; r++) {
-        const type = rowTypes[r];
-        const pattern = SPRITES[type];
-        const w = pattern[0].length * scale;
-        const h = pattern.length * scale;
-        const offsetX = r % 2 === 0 ? 0 : spacingX / 2;
-        for (let c = 0; c < cols; c++) {
-          aliens.push({ x: startX + c * spacingX + offsetX, y: startY + r * spacingY, w, h, type, alive: true });
-        }
-      }
-      break;
+      const spacingX = 48;
+      return createFormationGrid(5, 11, spacingX, 40, () => 80, (r) => r % 2 === 0 ? 0 : spacingX / 2, rowTypes, startY, scale);
     }
     case 'diamond': {
       const diamondCols = [5, 3, 1, 3, 5];
-      const rows = 5, spacingX = 48, spacingY = 40;
       const maxCols = Math.max(...diamondCols);
       const formationCenterX = maxCols - 1;
-      const startX = (GAME_CONFIG.canvas.width - formationCenterX * spacingX) / 2;
-      for (let r = 0; r < rows; r++) {
-        const type = rowTypes[r];
-        const pattern = SPRITES[type];
-        const w = pattern[0].length * scale;
-        const h = pattern.length * scale;
-        const count = diamondCols[r];
-        const rowStartX = startX + ((maxCols - count) * spacingX) / 2;
-        for (let c = 0; c < count; c++) {
-          aliens.push({ x: rowStartX + c * spacingX, y: startY + r * spacingY, w, h, type, alive: true });
-        }
-      }
-      break;
+      const baseX = (GAME_CONFIG.canvas.width - formationCenterX * 48) / 2;
+      return createFormationGrid(5, (r) => diamondCols[r], 48, 40, (_r, count) => baseX + ((maxCols - count) * 48) / 2, noop, rowTypes, startY, scale);
     }
     case 'compact': {
-      const cols = 8, rows = 4, spacingX = 36, spacingY = 32, startX = 120;
-      for (let r = 0; r < rows; r++) {
-        const type = rowTypes[r];
-        const pattern = SPRITES[type];
-        const w = pattern[0].length * scale;
-        const h = pattern.length * scale;
-        for (let c = 0; c < cols; c++) {
-          aliens.push({ x: startX + c * spacingX, y: startY + r * spacingY, w, h, type, alive: true });
-        }
-      }
-      break;
+      return createFormationGrid(4, 8, 36, 32, () => 120, noop, rowTypes, startY, scale);
     }
     case 'wide': {
-      const cols = 13, rows = 6, spacingX = 40, spacingY = 35, startX = 65;
-      for (let r = 0; r < rows; r++) {
-        const type = rowTypes[r];
-        const pattern = SPRITES[type];
-        const w = pattern[0].length * scale;
-        const h = pattern.length * scale;
-        for (let c = 0; c < cols; c++) {
-          aliens.push({ x: startX + c * spacingX, y: startY + r * spacingY, w, h, type, alive: true });
-        }
-      }
-      break;
+      return createFormationGrid(6, 13, 40, 35, () => 65, noop, rowTypes, startY, scale);
     }
     default: {
-      const cols = 11, rows = 5, spacingX = 48, spacingY = 40, startX = 80;
-      for (let r = 0; r < rows; r++) {
-        const type = rowTypes[r];
-        const pattern = SPRITES[type];
-        const w = pattern[0].length * scale;
-        const h = pattern.length * scale;
-        for (let c = 0; c < cols; c++) {
-          aliens.push({ x: startX + c * spacingX, y: startY + r * spacingY, w, h, type, alive: true });
-        }
-      }
-      break;
+      return createFormationGrid(5, 11, 48, 40, () => 80, noop, rowTypes, startY, scale);
     }
   }
-  return aliens;
 }
 
 export function createStars(): Star[] {
@@ -136,12 +109,13 @@ export function createUFO(): UFO {
     w,
     h,
     dx: GAME_CONFIG.ufo.speed,
+    dyingAt: 0,
   };
 }
 
 export function createPowerUp(x: number, y: number, type: PowerUpType): PowerUp {
   return {
-    x, y, w: 20, h: 20, dy: 2, type
+    x, y, w: 20, h: 20, dy: 2, type, spawnedAt: performance.now()
   };
 }
 

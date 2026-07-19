@@ -11,6 +11,7 @@ function makeAlien(overrides: Partial<Alien> = {}): Alien {
     h: 24,
     type: 'squid',
     alive: true,
+    dyingAt: 0,
     ...overrides,
   };
 }
@@ -36,6 +37,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
       speed: 5,
       cooldown: 0,
       invulnerable: 0,
+      diedAt: 0,
     },
     keys: {},
     alienDir: 1,
@@ -51,6 +53,7 @@ function createMockState(overrides: Partial<GameState> = {}): GameState {
     lastTime: 0,
     initialized: false,
     leaderboardCache: [],
+    screenOpenedAt: 0,
     ...overrides,
   };
 }

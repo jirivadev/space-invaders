@@ -1,5 +1,5 @@
 import type { GameState, Bullet, Shield, Alien, Player, PowerUp, UFO } from '../types';
-import { COLORS } from '../config';
+import { COLORS, ALIEN_POINTS } from '../config';
 import { rectsOverlap } from '../geometry';
 import {
   createExplosionParticles,
@@ -13,13 +13,12 @@ export class CollisionSystem {
   }
 
   checkBulletAlienCollision(bullet: Bullet, alien: Alien, state: GameState): boolean {
-    if (!alien.alive) return false;
+    if (!alien.alive || alien.dyingAt > 0) return false;
     if (!rectsOverlap(bullet, alien)) return false;
 
-    alien.alive = false;
-    const points = alien.type === 'squid' ? 30 : alien.type === 'crab' ? 20 : 10;
+    alien.dyingAt = performance.now();
+    const points = ALIEN_POINTS[alien.type];
     state.score += points;
-    state.particles.push(...createExplosionParticles(alien.x + alien.w / 2, alien.y + alien.h / 2, COLORS[alien.type], 40));
 
     // Chance to spawn power-up
     if (Math.random() < 0.1) {
@@ -32,18 +31,19 @@ export class CollisionSystem {
         h: 20,
         dy: 2,
         type,
+        spawnedAt: performance.now(),
       });
     }
     return true;
   }
 
   checkBulletUFOCollision(bullet: Bullet, ufo: UFO, state: GameState): boolean {
-    if (!ufo) return false;
+    if (!ufo || ufo.dyingAt > 0) return false;
     if (!rectsOverlap(bullet, ufo)) return false;
 
     const points = [50, 100, 150, 300][Math.floor(Math.random() * 4)];
     state.score += points;
-    state.particles.push(...createExplosionParticles(ufo.x + ufo.w / 2, ufo.y + ufo.h / 2, COLORS.ufo, 40));
+    ufo.dyingAt = performance.now();
     state.powerUps = []; // Clear power-ups for UFO kill
     return true;
   }

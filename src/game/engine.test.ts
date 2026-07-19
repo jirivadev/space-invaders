@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { rectsOverlap, hexToRgb } from './geometry';
 import { getLeaderboard, addToLeaderboard } from './leaderboard';
-import { LEADERBOARD_KEY, HIGH_SCORE_KEY } from './constants';
+import { LEADERBOARD_KEY, HIGH_SCORE_KEY } from './config';
 import { COLORS, GAME_CONFIG } from './config';
 import { GameEngine } from './engine';
 import type { UIState } from './types';
@@ -190,12 +190,15 @@ describe('GameEngine smoke', () => {
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
+      closePath: vi.fn(),
+      clip: vi.fn(),
       stroke: vi.fn(),
       fill: vi.fn(),
       clearRect: vi.fn(),
       save: vi.fn(),
       restore: vi.fn(),
       translate: vi.fn(),
+      scale: vi.fn(),
       arc: vi.fn(),
       measureText: vi.fn(() => ({ width: 0 })),
       set fillStyle(_v: string) { /* noop */ },
@@ -204,6 +207,8 @@ describe('GameEngine smoke', () => {
       set globalAlpha(_v: number) { /* noop */ },
       set font(_v: string) { /* noop */ },
       set textAlign(_v: string) { /* noop */ },
+      set textBaseline(_v: string) { /* noop */ },
+      set globalCompositeOperation(_v: string) { /* noop */ },
       set imageSmoothingEnabled(_v: boolean) { /* noop */ },
       get fillStyle() { return '#000'; },
       get strokeStyle() { return '#000'; },
@@ -211,6 +216,8 @@ describe('GameEngine smoke', () => {
       get globalAlpha() { return 1; },
       get font() { return ''; },
       get textAlign() { return 'left'; },
+      get textBaseline() { return 'alphabetic'; },
+      get globalCompositeOperation() { return 'source-over'; },
       get imageSmoothingEnabled() { return false; },
     };
     canvas = { getContext: () => mockCtx, width: 800, height: 640 } as unknown as HTMLCanvasElement;
