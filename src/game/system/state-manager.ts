@@ -1,16 +1,20 @@
-import type { GameState, GameStatus } from '../types';
-import { GAME_CONFIG, HIGH_SCORE_KEY, SHIELD_POSITIONS } from '../config';
-import { createStars, createShield, createAliens } from './entity-factory';
-import { getLeaderboard } from '../leaderboard';
-import { getLevelConfig } from './level-system';
+import type { GameState, GameStatus } from "../types";
+import { GAME_CONFIG, HIGH_SCORE_KEY, SHIELD_POSITIONS } from "../config";
+import { createStars, createShield, createAliens } from "./entity-factory";
+import { getLeaderboard } from "../leaderboard";
+import { getLevelConfig } from "./level-system";
 
 // Module-level cache for high score (avoid repeated localStorage reads)
 let _cachedHighScore: number | null = null;
 
 function readCachedHighScore(): number {
   if (_cachedHighScore === null) {
-    const saved = Number(localStorage.getItem(HIGH_SCORE_KEY) || '0');
-    _cachedHighScore = Number.isFinite(saved) ? saved : 0;
+    try {
+      const saved = Number(localStorage.getItem(HIGH_SCORE_KEY) || "0");
+      _cachedHighScore = Number.isFinite(saved) ? saved : 0;
+    } catch {
+      _cachedHighScore = 0;
+    }
   }
   return _cachedHighScore;
 }
@@ -20,7 +24,11 @@ export function resetHighScoreCache(): void {
   _cachedHighScore = null;
 }
 
-export function createInitialState(score: number = 0, lives: number = 3, status: GameStatus = 'menu'): GameState {
+export function createInitialState(
+  score: number = 0,
+  lives: number = 3,
+  status: GameStatus = "menu"
+): GameState {
   return {
     status,
     score,
@@ -30,7 +38,9 @@ export function createInitialState(score: number = 0, lives: number = 3, status:
     lives,
     aliens: createAliens(getLevelConfig(1).formation, getLevelConfig(1).startY),
     bullets: [],
-    shields: SHIELD_POSITIONS.map((x: number) => createShield(x, GAME_CONFIG.shield.y)),
+    shields: SHIELD_POSITIONS.map((x: number) =>
+      createShield(x, GAME_CONFIG.shield.y)
+    ),
     ufo: null,
     particles: [],
     player: {
@@ -56,7 +66,7 @@ export function createInitialState(score: number = 0, lives: number = 3, status:
       rapidFire: 0,
       shield: 0,
     },
-    pendingName: '',
+    pendingName: "",
     lastTime: 0,
     initialized: false,
     leaderboardCache: getLeaderboard(),
@@ -65,19 +75,19 @@ export function createInitialState(score: number = 0, lives: number = 3, status:
 }
 
 export function setPlaying(g: GameState): void {
-  g.status = 'playing';
+  g.status = "playing";
   g.levelAnnounceTimer = 0;
 }
 
 export function setMenu(g: GameState): void {
-  g.status = 'menu';
+  g.status = "menu";
   g.levelAnnounceTimer = 0;
   g.ufo = null;
   g.screenOpenedAt = performance.now();
 }
 
 export function setGameOver(g: GameState, saveHighScore: boolean = true) {
-  if (g.status !== 'playing') return;
+  if (g.status !== "playing") return;
   g.screenOpenedAt = performance.now();
   const isNewHighScore = saveHighScore && g.score > g.highScore;
   if (isNewHighScore) {
@@ -88,9 +98,9 @@ export function setGameOver(g: GameState, saveHighScore: boolean = true) {
     } catch {
       // localStorage may be unavailable (quota exceeded, private browsing)
     }
-    g.pendingName = '';
-    g.status = 'nameEntry';
+    g.pendingName = "";
+    g.status = "nameEntry";
   } else {
-    g.status = 'gameover';
+    g.status = "gameover";
   }
 }

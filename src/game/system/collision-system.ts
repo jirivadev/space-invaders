@@ -1,10 +1,15 @@
-import type { GameState, Bullet, Shield, Alien, Player, PowerUp, UFO } from '../types';
-import { COLORS, ALIEN_POINTS } from '../config';
-import { rectsOverlap } from '../geometry';
-import {
-  createExplosionParticles,
-  createImpactFlash
-} from './entity-factory';
+import type {
+  GameState,
+  Bullet,
+  Shield,
+  Alien,
+  Player,
+  PowerUp,
+  UFO,
+} from "../types";
+import { COLORS, ALIEN_POINTS, GAME_CONFIG } from "../config";
+import { rectsOverlap } from "../geometry";
+import { createExplosionParticles, createImpactFlash } from "./entity-factory";
 
 export class CollisionSystem {
   checkBulletPlayerCollision(bullet: Bullet, player: Player): boolean {
@@ -12,7 +17,11 @@ export class CollisionSystem {
     return rectsOverlap(bullet, player);
   }
 
-  checkBulletAlienCollision(bullet: Bullet, alien: Alien, state: GameState): boolean {
+  checkBulletAlienCollision(
+    bullet: Bullet,
+    alien: Alien,
+    state: GameState
+  ): boolean {
     if (!alien.alive || alien.dyingAt > 0) return false;
     if (!rectsOverlap(bullet, alien)) return false;
 
@@ -21,7 +30,7 @@ export class CollisionSystem {
 
     // Chance to spawn power-up
     if (Math.random() < 0.1) {
-      const types = ['rapidFire', 'shield', 'bomb'] as const;
+      const types = ["rapidFire", "shield", "bomb"] as const;
       const type = types[Math.floor(Math.random() * types.length)];
       state.powerUps.push({
         x: alien.x + alien.w / 2 - 10,
@@ -47,12 +56,37 @@ export class CollisionSystem {
     return true;
   }
 
-  checkPlayerBulletShield(bullet: Bullet, shield: Shield, state: GameState): boolean {
-    const shieldRect = { x: shield.x, y: shield.y, w: shield.cols * shield.pixelSize, h: shield.rows * shield.pixelSize };
+  checkPlayerBulletShield(
+    bullet: Bullet,
+    shield: Shield,
+    state: GameState
+  ): boolean {
+    const shieldRect = {
+      x: shield.x,
+      y: shield.y,
+      w: shield.cols * shield.pixelSize,
+      h: shield.rows * shield.pixelSize,
+    };
     if (!rectsOverlap(bullet, shieldRect)) return false;
 
-    state.particles.push(...createExplosionParticles(bullet.x + bullet.w / 2, bullet.y + bullet.h / 2, COLORS.shield, 4));
-    state.particles.push(createImpactFlash(bullet.x + bullet.w / 2, bullet.y + bullet.h / 2, '#86efac', 10));
+    if (state.particles.length < GAME_CONFIG.particle.maxCount) {
+      state.particles.push(
+        ...createExplosionParticles(
+          bullet.x + bullet.w / 2,
+          bullet.y + bullet.h / 2,
+          COLORS.shield,
+          4
+        )
+      );
+      state.particles.push(
+        createImpactFlash(
+          bullet.x + bullet.w / 2,
+          bullet.y + bullet.h / 2,
+          "#86efac",
+          10
+        )
+      );
+    }
     return true;
   }
 
