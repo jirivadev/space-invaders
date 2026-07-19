@@ -51,8 +51,9 @@ export class PhysicsSystem {
     if (!g.ufo && g.ufoTimer <= 0) {
       const dir = Math.random() < 0.5 ? -1 : 1;
       g.ufo = createUFO();
+      g.ufo!.dx = dir * Math.abs(g.ufo!.dx);
       g.ufo!.x = dir === 1 ? -g.ufo!.w : GAME_CONFIG.canvas.width;
-        g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
+      g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
     }
 
     if (g.ufo) {
@@ -130,6 +131,7 @@ export class PhysicsSystem {
       if (!a.alive || a.dyingAt > 0) continue;
       if (a.y + a.h >= GAME_CONFIG.canvas.groundY) {
         setGameOver(g);
+        break;
       }
       for (const s of g.shields) {
         const sw = s.cols * s.pixelSize;
@@ -156,6 +158,9 @@ export class PhysicsSystem {
         g.bullets.splice(j, 1);
       }
     }
+    g.alienDir = 1;
+    g.alienStepTimer = 0;
+    g.alienMoveDown = false;
     if (g.particles.length > GAME_CONFIG.particle.maxCount) {
       g.particles.length = GAME_CONFIG.particle.maxCount;
     }
@@ -163,11 +168,11 @@ export class PhysicsSystem {
 
   // Time-based player invulnerability countdown
   updatePlayerInvulnerability(g: GameState, dt: number): void {
-    if (g.player.invulnerable > 0) g.player.invulnerable -= dt;
+    if (g.player.invulnerable > 0) g.player.invulnerable = Math.max(0, g.player.invulnerable - dt);
   }
 
   // Time-based cooldown countdown
   updateCooldowns(g: GameState, dt: number): void {
-    if (g.player.cooldown > 0) g.player.cooldown -= dt;
+    if (g.player.cooldown > 0) g.player.cooldown = Math.max(0, g.player.cooldown - dt);
   }
 }

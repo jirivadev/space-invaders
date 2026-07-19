@@ -24,6 +24,7 @@ export interface Alien {
   type: 'squid' | 'crab' | 'octopus';
   alive: boolean;
   dyingAt: number;
+  pendingScore?: number;
 }
 
 export interface Bullet {
@@ -136,6 +137,7 @@ export interface UIState {
   score: number;
   highScore: number;
   lives: number;
+  level: number;
   status: GameStatus;
   rapidFireTime: number;
   shieldTime: number;

@@ -4,7 +4,7 @@ import type { UIState } from './game/types';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from './game/config';
 
 const initialUI: UIState = {
-  score: 0, highScore: 0, lives: 3,
+  score: 0, highScore: 0, lives: 3, level: 1,
   status: 'menu', rapidFireTime: 0, shieldTime: 0,
 };
 
@@ -51,6 +51,7 @@ export default function App() {
       <div className="flex w-full max-w-4xl flex-wrap items-center justify-between gap-2 px-2 text-sm text-slate-400 md:text-base">
         <p>Score: <span className="text-green-400">{ui.score}</span></p>
         <p>High Score: <span className="text-yellow-400">{ui.highScore}</span></p>
+        <p>Level: <span className="text-blue-400">{ui.level}</span></p>
         <p>Lives: <span className="text-red-400">{'❤'.repeat(Math.max(0, ui.lives))}</span></p>
       </div>
       {(ui.rapidFireTime > 0 || ui.shieldTime > 0) && (

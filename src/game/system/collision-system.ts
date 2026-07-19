@@ -17,8 +17,7 @@ export class CollisionSystem {
     if (!rectsOverlap(bullet, alien)) return false;
 
     alien.dyingAt = performance.now();
-    const points = ALIEN_POINTS[alien.type];
-    state.score += points;
+    alien.pendingScore = ALIEN_POINTS[alien.type];
 
     // Chance to spawn power-up
     if (Math.random() < 0.1) {

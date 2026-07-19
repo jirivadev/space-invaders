@@ -16,7 +16,16 @@ export function getLeaderboard(): LeaderboardEntry[] {
 
 export function addToLeaderboard(name: string, score: number) {
   const entries = getLeaderboard();
-  entries.push({ name: name.trim(), score, date: Date.now() });
+  const trimmed = name.trim();
+  const existing = entries.find((e) => e.name === trimmed);
+  if (existing) {
+    if (score > existing.score) {
+      existing.score = score;
+      existing.date = Date.now();
+    }
+  } else {
+    entries.push({ name: trimmed, score, date: Date.now() });
+  }
   entries.sort((a, b) => b.score - a.score);
   try {
     localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries.slice(0, MAX_LEADERBOARD_ENTRIES)));

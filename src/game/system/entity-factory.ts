@@ -193,10 +193,10 @@ export function createImpactFlash(x: number, y: number, color: string, size: num
 }
 
 export function damageShieldRect(shield: Shield, x: number, y: number, w: number, h: number): boolean {
-  const left = Math.floor((x - shield.x) / shield.pixelSize);
-  const right = Math.floor((x + w - shield.x) / shield.pixelSize);
-  const top = Math.floor((y - shield.y) / shield.pixelSize);
-  const bottom = Math.floor((y + h - shield.y) / shield.pixelSize);
+  const left = Math.max(0, Math.floor((x - shield.x) / shield.pixelSize));
+  const right = Math.min(shield.cols - 1, Math.floor((x + w - shield.x) / shield.pixelSize));
+  const top = Math.max(0, Math.floor((y - shield.y) / shield.pixelSize));
+  const bottom = Math.min(shield.rows - 1, Math.floor((y + h - shield.y) / shield.pixelSize));
 
   let hit = false;
   for (let r = top; r <= bottom; r++) {

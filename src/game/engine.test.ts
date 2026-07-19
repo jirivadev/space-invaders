@@ -185,6 +185,7 @@ describe('GameEngine smoke', () => {
     // Minimal mock 2D context
     mockCtx = {
       fillRect: vi.fn(),
+      rect: vi.fn(),
       fillText: vi.fn(),
       strokeRect: vi.fn(),
       beginPath: vi.fn(),

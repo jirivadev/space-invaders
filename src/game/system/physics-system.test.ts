@@ -272,10 +272,11 @@ describe('PhysicsSystem', () => {
       const g = createMockState();
       g.player.cooldown = 30;
       system.updateCooldowns(g, 100);
-      // Note: updateCooldowns does not clamp — it only subtracts when > 0
-      // After 30 - 100 = -70, the next call will see -70 <= 0 and skip
+      // Cooldown is clamped to 0 — never goes negative
+      expect(g.player.cooldown).toBe(0);
+      // Subsequent calls should have no effect
       system.updateCooldowns(g, 100);
-      expect(g.player.cooldown).toBe(-70);
+      expect(g.player.cooldown).toBe(0);
     });
   });
 

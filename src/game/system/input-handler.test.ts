@@ -263,12 +263,6 @@ describe('InputHandler', () => {
       expect(handler.checkForShoot(g)).toBe(true);
     });
 
-    it('returns true when cooldown is 0 and Spacebar is held', () => {
-      const g = createMockState({ keys: { Spacebar: true } });
-      const handler = new InputHandler({ onUIChange: vi.fn() });
-      expect(handler.checkForShoot(g)).toBe(true);
-    });
-
     it('returns false when cooldown is active', () => {
       const g = createMockState({ keys: { ' ': true }, player: { x: 0, y: 0, w: 27, h: 21, speed: 5, cooldown: 100, invulnerable: 0, diedAt: 0 } });
       const handler = new InputHandler({ onUIChange: vi.fn() });

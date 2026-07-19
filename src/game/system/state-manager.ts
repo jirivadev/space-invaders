@@ -1,20 +1,36 @@
 import type { GameState, GameStatus } from '../types';
 import { GAME_CONFIG, HIGH_SCORE_KEY, SHIELD_POSITIONS } from '../config';
-import { createStars, createShield } from './entity-factory';
+import { createStars, createShield, createAliens } from './entity-factory';
 import { getLeaderboard } from '../leaderboard';
+import { getLevelConfig } from './level-system';
+
+// Module-level cache for high score (avoid repeated localStorage reads)
+let _cachedHighScore: number | null = null;
+
+function readCachedHighScore(): number {
+  if (_cachedHighScore === null) {
+    const saved = Number(localStorage.getItem(HIGH_SCORE_KEY) || '0');
+    _cachedHighScore = Number.isFinite(saved) ? saved : 0;
+  }
+  return _cachedHighScore;
+}
+
+/** Reset the cached high score (used by tests). */
+export function resetHighScoreCache(): void {
+  _cachedHighScore = null;
+}
 
 export class GameStateManager {
   // Create initial game state
   createInitialState(score: number = 0, lives: number = 3, status: GameStatus = 'menu'): GameState {
-    const savedHigh = Number(localStorage.getItem(HIGH_SCORE_KEY) || '0');
     return {
       status,
       score,
-      highScore: Number.isFinite(savedHigh) ? savedHigh : 0,
+      highScore: readCachedHighScore(),
       level: 1,
       levelAnnounceTimer: 0,
       lives,
-      aliens: [],
+      aliens: createAliens(getLevelConfig(1).formation, getLevelConfig(1).startY),
       bullets: [],
       shields: SHIELD_POSITIONS.map((x: number) => createShield(x, GAME_CONFIG.shield.y)),
       ufo: null,
@@ -67,11 +83,12 @@ export class GameStateManager {
 }
 
 export function setGameOver(g: GameState, saveHighScore: boolean = true) {
-  if (g.status === 'gameover' || g.status === 'nameEntry') return;
+  if (g.status !== 'playing') return;
   g.screenOpenedAt = performance.now();
   const isNewHighScore = saveHighScore && g.score > g.highScore;
   if (isNewHighScore) {
     g.highScore = g.score;
+    _cachedHighScore = g.highScore;
     try {
       localStorage.setItem(HIGH_SCORE_KEY, String(g.highScore));
     } catch {

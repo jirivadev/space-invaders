@@ -11,6 +11,7 @@ const POWER_UP_VISUALS: Record<PowerUpType, { color: string; label: string }> = 
 export class RenderingSystem {
   // Clear canvas with background color
   clearCanvas(ctx: CanvasRenderingContext2D): void {
+    ctx.globalAlpha = 1;
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = COLORS.bg;
     ctx.fillRect(0, 0, GAME_CONFIG.canvas.width, GAME_CONFIG.canvas.height);
@@ -172,7 +173,6 @@ export class RenderingSystem {
         ctx.fill();
       }
       ctx.restore();
-      ctx.globalAlpha = invulnerableTime > 0 ? (0.3 + 0.7 * Math.abs(Math.sin(now * 0.012))) : 1;
     }
 
     // Draw the ship
@@ -187,12 +187,8 @@ export class RenderingSystem {
       const spriteScale = 2;
       const spawnPhase = p.spawnedAt * 0.001;
 
-      // Vertical bob
-      const bobY = Math.sin(now * 0.005 + spawnPhase) * 3;
-      const drawY = p.y + bobY;
-
       const centerX = p.x + p.w / 2;
-      const centerY = drawY + p.h / 2;
+      const centerY = p.y + p.h / 2;
 
       // Pulsing glow ring — subtle, radius ~1.3x sprite
       const glowRadius = Math.max(p.w, p.h) * 0.65;
@@ -207,7 +203,7 @@ export class RenderingSystem {
       ctx.restore();
 
       // Draw capsule sprite
-      drawSprite(ctx, SPRITES.powerUp, p.x, drawY, spriteScale, color);
+      drawSprite(ctx, SPRITES.powerUp, p.x, p.y, spriteScale, color);
 
       // Type letter inside the sprite
       ctx.save();
@@ -222,6 +218,7 @@ export class RenderingSystem {
 
   // Draw bullets with trail and glow effects
   drawBullets(ctx: CanvasRenderingContext2D, bullets: Bullet[]): void {
+    ctx.save();
     for (const b of bullets) {
       const bulletColor = b.owner === 'player' ? COLORS.playerBullet : COLORS.alienBullet;
       const glowColor = b.owner === 'player' ? 'rgba(250, 204, 21, ' : 'rgba(248, 113, 113, ';
@@ -260,6 +257,7 @@ export class RenderingSystem {
       ctx.fillRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
       ctx.globalAlpha = 1;
     }
+    ctx.restore();
   }
 
   // Draw particles

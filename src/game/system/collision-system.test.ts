@@ -143,7 +143,7 @@ describe('CollisionSystem', () => {
       expect(system.checkBulletAlienCollision(bullet, alien, state)).toBe(false);
     });
 
-    it('hits a squid: score += 30, alien starts dying, no particles yet', () => {
+    it('hits a squid: pendingScore = 30, alien starts dying, no particles yet', () => {
       const state = createMockState();
       const bullet = makeBullet({ x: 100, y: 100 });
       const alien = makeAlien({ x: 100, y: 100, type: 'squid' });
@@ -151,24 +151,25 @@ describe('CollisionSystem', () => {
       expect(result).toBe(true);
       expect(alien.alive).toBe(true); // still alive during death animation
       expect(alien.dyingAt).toBeGreaterThan(0);
-      expect(state.score).toBe(30);
+      expect(alien.pendingScore).toBe(30);
+      expect(state.score).toBe(0); // score deferred to death animation completion
       expect(state.particles.length).toBe(0); // particles spawned later by engine
     });
 
-    it('hits a crab: score += 20', () => {
+    it('hits a crab: pendingScore = 20', () => {
       const state = createMockState();
       const bullet = makeBullet({ x: 100, y: 100 });
       const alien = makeAlien({ x: 100, y: 100, type: 'crab' });
       system.checkBulletAlienCollision(bullet, alien, state);
-      expect(state.score).toBe(20);
+      expect(alien.pendingScore).toBe(20);
     });
 
-    it('hits an octopus: score += 10', () => {
+    it('hits an octopus: pendingScore = 10', () => {
       const state = createMockState();
       const bullet = makeBullet({ x: 100, y: 100 });
       const alien = makeAlien({ x: 100, y: 100, type: 'octopus' });
       system.checkBulletAlienCollision(bullet, alien, state);
-      expect(state.score).toBe(10);
+      expect(alien.pendingScore).toBe(10);
     });
 
     it('can spawn a power-up (random < 0.1)', () => {

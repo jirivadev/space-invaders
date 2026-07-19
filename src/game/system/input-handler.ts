@@ -28,7 +28,7 @@ export class InputHandler {
     const g = this.callbacks.onGetState?.();
     if (!g) return;
     g.keys[e.key] = true;
-    if ([' ', 'Spacebar', 'ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D', 'Enter'].includes(e.key)) {
+    if ([' ', 'ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D', 'Enter'].includes(e.key)) {
       e.preventDefault();
     }
 
@@ -57,7 +57,7 @@ export class InputHandler {
       this.callbacks.onStateChange?.('menu');
     } else if (key === 'Backspace') {
       g.pendingName = g.pendingName.slice(0, -1);
-    } else if (g.pendingName.length < GAME_CONFIG.ui.nameEntryMaxChars) {
+    } else if (key.length === 1 && g.pendingName.length < GAME_CONFIG.ui.nameEntryMaxChars) {
       g.pendingName += key;
     }
   }
@@ -86,7 +86,7 @@ export class InputHandler {
 
   checkForShoot(g: GameState): boolean {
     if (g.player.cooldown > 0) return false;
-    if (!(g.keys[' '] || g.keys['Spacebar'])) return false;
+    if (!g.keys[' ']) return false;
     return true;
   }
 }

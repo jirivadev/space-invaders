@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GameStateManager, setGameOver } from './state-manager';
+import { GameStateManager, setGameOver, resetHighScoreCache } from './state-manager';
 import { HIGH_SCORE_KEY, LEADERBOARD_KEY } from '../config';
 import type { GameState } from '../types';
 
@@ -64,6 +64,7 @@ describe('state-manager', () => {
   let mock: ReturnType<typeof makeMockStorage>;
 
   beforeEach(() => {
+    resetHighScoreCache();
     mock = makeMockStorage();
     vi.stubGlobal('localStorage', mock.api);
   });

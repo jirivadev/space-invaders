@@ -4,7 +4,7 @@ import { createAliens } from './entity-factory';
 import { setGameOver } from './state-manager';
 
 // Level configuration manager
-function getLevelConfig(level: number): LevelConfig {
+export function getLevelConfig(level: number): LevelConfig {
   if (level <= 4) {
     const configs: LevelConfig[] = [
       { formation: 'grid', speedMultiplier: 1.0, shootIntervalMultiplier: 1.0, enemyBulletSpeed: 4, startY: 80 },
@@ -47,16 +47,17 @@ export class LevelSystem {
     const levelConfig = getLevelConfig(g.level);
     const aliveAliens = g.aliens.filter((a) => a.alive);
     const totalAliens = g.aliens.length;
-    const speedFactor = Math.pow(totalAliens / Math.max(1, aliveAliens.length), 1.6);
+    const rawFactor = Math.pow(totalAliens / Math.max(1, aliveAliens.length), 1.6);
+    const speedFactor = Math.min(rawFactor, 8);
     const stepInterval = Math.max(80, 700 / (1 + speedFactor)) / levelConfig.speedMultiplier;
     return stepInterval;
   }
 
   // Process alien movement in response to edge collision
-  moveAliens(g: GameState, now: number): void {
+  moveAliens(g: GameState, dt: number): void {
     const stepInterval = this.getAlienStepInterval(g);
 
-    g.alienStepTimer += now;
+    g.alienStepTimer += dt;
     if (g.alienStepTimer >= stepInterval) {
       g.alienStepTimer = 0;
       g.alienFrame = g.alienFrame === 0 ? 1 : 0;
@@ -142,7 +143,7 @@ export class LevelSystem {
   }
 
   // Alien shooting timer management
-  updateAlienShootingTimer(g: GameState, now: number): void {
+  updateAlienShootingTimer(g: GameState, dt: number): void {
     const aliveAliens = g.aliens.filter((a) => a.alive && a.dyingAt === 0);
     if (aliveAliens.length === 0) {
       g.alienShootTimer = 0;
@@ -152,7 +153,7 @@ export class LevelSystem {
     const levelConfig = getLevelConfig(g.level);
     const shootInterval = Math.max(200, aliveAliens.length * 25) * levelConfig.shootIntervalMultiplier;
 
-    g.alienShootTimer -= now;
+    g.alienShootTimer -= dt;
     if (g.alienShootTimer <= 0) {
       g.alienShootTimer = shootInterval;
     }

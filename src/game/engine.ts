@@ -1,18 +1,19 @@
 import type { GameState, GameStatus, GameCallbacks } from './types';
-import { GAME_CONFIG, STAR_LAYERS, COLORS } from './config';
+import { GAME_CONFIG, STAR_LAYERS, COLORS, SHIELD_POSITIONS } from './config';
 import { InputHandler } from './system/input-handler';
 import { CollisionSystem } from './system/collision-system';
 import { PhysicsSystem } from './system/physics-system';
-import { LevelSystem } from './system/level-system';
+import { LevelSystem, getLevelConfig } from './system/level-system';
 import { RenderingSystem } from './system/rendering-system';
 import { GameStateManager } from './system/state-manager';
 import { getLeaderboard, addToLeaderboard } from './leaderboard';
-import { createExplosionParticles, createImpactFlash } from './system/entity-factory';
+import { createExplosionParticles, createImpactFlash, createAliens, createShield } from './system/entity-factory';
 import { setGameOver } from './system/state-manager';
 
 export class GameEngine {
   private ctx: CanvasRenderingContext2D | null = null;
-  private rafId = 0;
+  private rafId: number = 0;
+  private _boundFrame: FrameRequestCallback;
   private callbacks: GameCallbacks;
 
   // System instances
@@ -23,11 +24,12 @@ export class GameEngine {
   private renderingSystem: RenderingSystem;
   private stateManager: GameStateManager;
 
-  private lastUI: { score: number; lives: number; status: string; rapidFireTime: number; shieldTime: number } | null = null;
+  private lastUI: { score: number; highScore: number; lives: number; status: string; level: number; rapidFireTime: number; shieldTime: number } | null = null;
 
   constructor(canvas: HTMLCanvasElement, callbacks: GameCallbacks) {
     this.callbacks = callbacks;
     this.ctx = canvas.getContext('2d');
+    this._boundFrame = this._frame.bind(this);
     
     // Initialize systems
     this.inputHandler = new InputHandler({ ...callbacks, onGetState: () => this.g! });
@@ -41,11 +43,11 @@ export class GameEngine {
   start() {
     this.g = this.stateManager.createInitialState(0, 3, 'menu');
     this.inputHandler.start();
-    this.rafId = requestAnimationFrame(this._frame.bind(this));
+    this.rafId = requestAnimationFrame(this._boundFrame);
   }
 
   stop() {
-    cancelAnimationFrame(this.rafId);
+    if (this.rafId) cancelAnimationFrame(this.rafId);
     this.inputHandler.stop();
   }
 
@@ -69,7 +71,7 @@ export class GameEngine {
   private _frame() {
     this._update();
     this._draw();
-    this.rafId = requestAnimationFrame(this._frame.bind(this));
+    this.rafId = requestAnimationFrame(this._boundFrame);
   }
 
   private _update(): void {
@@ -77,9 +79,10 @@ export class GameEngine {
     if (!g) return;
 
     // Time management
-    const rawDt = g.initialized ? Date.now() - g.lastTime : GAME_CONFIG.canvas.targetDt;
+    const now = performance.now();
+    const rawDt = g.initialized ? now - g.lastTime : GAME_CONFIG.canvas.targetDt;
     const dt = Math.min(GAME_CONFIG.canvas.maxDt, rawDt);
-    g.lastTime = Date.now();
+    g.lastTime = now;
     g.initialized = true;
 
     const moveScale = dt / GAME_CONFIG.canvas.targetDt;
@@ -152,7 +155,6 @@ export class GameEngine {
     this.physicsSystem.updateParticles(g, moveScale);
 
     // Process dying aliens — spawn explosion after flash duration
-    const now = performance.now();
     this._processDyingAliens(g, now);
 
     // Process dying UFO — spawn explosion after flash duration
@@ -186,6 +188,7 @@ export class GameEngine {
           if (this.collisionSystem.checkBulletAlienCollision(b, a, g)) {
             this.physicsSystem.triggerShake( 4, 130);
             g.particles.push(createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, '#fef08a', 12));
+            g.bullets.splice(i, 1);
             break;
           }
         }
@@ -250,6 +253,8 @@ export class GameEngine {
     for (let i = g.aliens.length - 1; i >= 0; i--) {
       const a = g.aliens[i];
       if (a.dyingAt > 0 && now - a.dyingAt >= ALIEN_DEATH_DURATION) {
+        g.score += a.pendingScore ?? 0;
+        a.pendingScore = 0;
         a.alive = false;
         a.dyingAt = 0;
         g.particles.push(...createExplosionParticles(a.x + a.w / 2, a.y + a.h / 2, COLORS[a.type], 40));
@@ -283,15 +288,34 @@ export class GameEngine {
     switch (g.status) {
       case 'menu':
         // Check for spacebar to start
-        if (g.keys[' '] || g.keys['Spacebar']) {
+        if (g.keys[' ']) {
+          g.keys[' '] = false;
+          // Reset game state for new game
+          g.score = 0;
+          g.lives = 3;
+          g.level = 1;
+          g.shields = SHIELD_POSITIONS.map((x) => createShield(x, GAME_CONFIG.shield.y));
+          g.bullets = [];
+          g.particles = [];
+          g.powerUps = [];
+          g.activePowerUps = { rapidFire: 0, shield: 0 };
+          g.player.cooldown = 0;
+          g.player.invulnerable = 0;
+          g.player.diedAt = 0;
+          g.alienDir = 1;
+          g.alienStepTimer = 0;
+          g.alienMoveDown = false;
           this.stateManager.setPlaying(g);
+          const cfg = getLevelConfig(g.level);
+          g.aliens = createAliens(cfg.formation, cfg.startY);
           g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
         }
         break;
 
       case 'gameover':
         // Check for spacebar to return to menu
-        if (g.keys[' '] || g.keys['Spacebar']) {
+        if (g.keys[' ']) {
+          g.keys[' '] = false;
           this.stateManager.setMenu(g);
         }
         break;
@@ -357,6 +381,7 @@ export class GameEngine {
       highScore: g.highScore,
       lives: g.lives,
       status: g.status,
+      level: g.level,
       rapidFireTime: Math.ceil(g.activePowerUps.rapidFire / 1000),
       shieldTime: Math.ceil(g.activePowerUps.shield / 1000),
     };
@@ -364,8 +389,10 @@ export class GameEngine {
     if (
       !prev ||
       prev.score !== ui.score ||
+      prev.highScore !== ui.highScore ||
       prev.lives !== ui.lives ||
       prev.status !== ui.status ||
+      prev.level !== ui.level ||
       prev.rapidFireTime !== ui.rapidFireTime ||
       prev.shieldTime !== ui.shieldTime
     ) {
