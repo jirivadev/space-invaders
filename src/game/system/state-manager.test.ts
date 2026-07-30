@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createInitialState, setPlaying, setMenu, setGameOver, resetHighScoreCache } from './state-manager';
+import { createInitialState, setPlaying, setMenu, setGameOver, resetHighScoreCache, resetGameState } from './state-manager';
 import { HIGH_SCORE_KEY, LEADERBOARD_KEY } from '../config';
 import { createMockState } from '../test-utils/factory';
 
@@ -158,6 +158,35 @@ describe('state-manager', () => {
       expect(g.status).toBe('menu');
       expect(g.ufo).toBeNull();
       expect(g.levelAnnounceTimer).toBe(0);
+    });
+  });
+
+  describe('resetGameState', () => {
+    it('resets score, lives, level, and gameplay collections', () => {
+      const g = createMockState({
+        score: 999,
+        lives: 1,
+        level: 5,
+        bullets: [{ x: 0, y: 0, w: 4, h: 12, dy: -9, owner: 'player', trail: [] }],
+        particles: [{ x: 0, y: 0, vx: 0, vy: 0, life: 100, maxLife: 100, color: '#fff', size: 1, type: 'spark' as const }],
+        powerUps: [{ x: 0, y: 0, w: 20, h: 20, dy: 2, type: 'rapidFire' as const, spawnedAt: 0 }],
+        activePowerUps: { rapidFire: 100, shield: 100 },
+      });
+      resetGameState(g);
+      expect(g.score).toBe(0);
+      expect(g.lives).toBe(3);
+      expect(g.level).toBe(1);
+      expect(g.bullets).toHaveLength(0);
+      expect(g.particles).toHaveLength(0);
+      expect(g.powerUps).toHaveLength(0);
+      expect(g.activePowerUps).toEqual({ rapidFire: 0, shield: 0 });
+      expect(g.shields).toHaveLength(4);
+    });
+
+    it('keeps high score intact', () => {
+      const g = createMockState({ highScore: 1234 });
+      resetGameState(g);
+      expect(g.highScore).toBe(1234);
     });
   });
 });

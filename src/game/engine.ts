@@ -1,5 +1,5 @@
 import type { GameState, GameStatus, GameCallbacks } from "./types";
-import { GAME_CONFIG, STAR_LAYERS, COLORS, SHIELD_POSITIONS } from "./config";
+import { GAME_CONFIG, STAR_LAYERS, COLORS } from "./config";
 import { InputHandler } from "./system/input-handler";
 import { CollisionSystem } from "./system/collision-system";
 import { PhysicsSystem } from "./system/physics-system";
@@ -9,15 +9,15 @@ import {
   createInitialState,
   setPlaying,
   setMenu,
+  setGameOver,
+  resetGameState,
 } from "./system/state-manager";
 import { getLeaderboard, addToLeaderboard } from "./leaderboard";
 import {
   createExplosionParticles,
   createImpactFlash,
   createAliens,
-  createShield,
 } from "./system/entity-factory";
-import { setGameOver } from "./system/state-manager";
 
 export class GameEngine {
   private ctx: CanvasRenderingContext2D | null = null;
@@ -380,22 +380,7 @@ export class GameEngine {
         if (g.keys[" "]) {
           g.keys[" "] = false;
           // Reset game state for new game
-          g.score = 0;
-          g.lives = 3;
-          g.level = 1;
-          g.shields = SHIELD_POSITIONS.map((x) =>
-            createShield(x, GAME_CONFIG.shield.y)
-          );
-          g.bullets = [];
-          g.particles = [];
-          g.powerUps = [];
-          g.activePowerUps = { rapidFire: 0, shield: 0 };
-          g.player.cooldown = 0;
-          g.player.invulnerable = 0;
-          g.player.diedAt = 0;
-          g.alienDir = 1;
-          g.alienStepTimer = 0;
-          g.alienMoveDown = false;
+          resetGameState(g);
           setPlaying(g);
           const cfg = getLevelConfig(g.level);
           g.aliens = createAliens(cfg.formation, cfg.startY);

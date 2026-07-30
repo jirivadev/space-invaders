@@ -98,6 +98,7 @@ export class PhysicsSystem {
 
   // Particle physics update
   updateParticles(g: GameState, moveScale: number): void {
+    this.enforceParticleCap(g);
     for (let i = g.particles.length - 1; i >= 0; i--) {
       const p = g.particles[i];
       if (p.type !== 'flash') {
@@ -110,6 +111,13 @@ export class PhysicsSystem {
       }
       p.life -= moveScale * GAME_CONFIG.particle.lifeDecayPerFrame;
       if (p.life <= 0) g.particles.splice(i, 1);
+    }
+  }
+
+  // Enforce the global particle cap to prevent frame drops
+  enforceParticleCap(g: GameState): void {
+    if (g.particles.length > GAME_CONFIG.particle.maxCount) {
+      g.particles.length = GAME_CONFIG.particle.maxCount;
     }
   }
 

@@ -4,6 +4,26 @@ import { createStars, createShield, createAliens } from "./entity-factory";
 import { getLeaderboard } from "../leaderboard";
 import { getLevelConfig } from "./level-system";
 
+/** Reset mutable gameplay state for a fresh run (keeps high score). */
+export function resetGameState(g: GameState): void {
+  g.score = 0;
+  g.lives = 3;
+  g.level = 1;
+  g.shields = SHIELD_POSITIONS.map((x: number) =>
+    createShield(x, GAME_CONFIG.shield.y)
+  );
+  g.bullets = [];
+  g.particles = [];
+  g.powerUps = [];
+  g.activePowerUps = { rapidFire: 0, shield: 0 };
+  g.player.cooldown = 0;
+  g.player.invulnerable = 0;
+  g.player.diedAt = 0;
+  g.alienDir = 1;
+  g.alienStepTimer = 0;
+  g.alienMoveDown = false;
+}
+
 // Module-level cache for high score (avoid repeated localStorage reads)
 let _cachedHighScore: number | null = null;
 
