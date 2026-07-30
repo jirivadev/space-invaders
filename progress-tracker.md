@@ -4,26 +4,26 @@
 
 | ID | Item | Files | Status | Notes |
 |----|------|-------|--------|-------|
-| 1 | Fix level announcement overlay never disappearing | `src/game/engine.ts`, `src/game/system/level-system.ts` | Pending | `levelAnnounceTimer` is set but never decremented; overlay stays forever. |
-| 2 | Fix player bullets not damaging shields | `src/game/system/collision-system.ts` | Pending | `checkPlayerBulletShield` spawns particles but never calls `damageShieldRect()`. |
-| 3 | Fix malformed player sprite rows | `src/game/config.ts` | Pending | Rows 6–7 of `SPRITES.player` are 8 chars instead of 9, causing uneven rendering. |
+| 1 | Fix level announcement overlay never disappearing | `src/game/engine.ts`, `src/game/system/level-system.ts` | Done | Timer decremented in `_update()` with `Math.max(0, ...)`; tests added. |
+| 2 | Fix player bullets not damaging shields | `src/game/system/collision-system.ts` | Done | `checkPlayerBulletShield` now calls `damageShieldRect()`; test added. |
+| 3 | Fix malformed player sprite rows | `src/game/config.ts` | Done | Rows 6–7 padded to 9 chars; sprite consistency test added. |
 
 ## Medium Priority (Bugs / Logic Issues)
 
 | ID | Item | Files | Status | Notes |
 |----|------|-------|--------|-------|
-| 4 | Fix misleading test name in `level-system.test.ts` | `src/game/system/level-system.test.ts` | Pending | Test asserts `toBeLessThan(80)` but is named as if it enforces a floor of 80. |
-| 5 | Enforce global particle cap | `src/game/engine.ts`, `src/game/system/particle-system.ts` | Pending | `maxCount` is only checked in `applyBomb()`; other sources can exceed it. |
-| 6 | Rename `GameEngine.addToLeaderboard` to avoid shadowing | `src/game/engine.ts` | Pending | Method has the same name as the imported leaderboard function; rename to `submitLeaderboard`. |
-| 7 | Fix circular callbacks in `App.tsx` | `src/App.tsx` | Pending | Callbacks passed to engine just call back into engine methods; simplify wiring. |
+| 4 | Fix misleading test name in `level-system.test.ts` | `src/game/system/level-system.test.ts` | Done | Renamed to clarify that the interval can drop below 80 at high difficulty. |
+| 5 | Enforce global particle cap | `src/game/engine.ts`, `src/game/system/physics-system.ts` | Done | Added `enforceParticleCap()` and call it in `updateParticles()` and at the end of `_update()`; tests added. |
+| 6 | Rename `GameEngine.addToLeaderboard` to avoid shadowing | `src/game/engine.ts` | Done | Renamed to `submitLeaderboard`; `engine.test.ts` updated. |
+| 7 | Fix circular callbacks in `App.tsx` | `src/App.tsx`, `src/game/engine.ts` | Done | Engine now wires its own methods into `InputHandler`; App only passes `onUIChange`. |
 
 ## Low Priority (Code Quality / Maintainability)
 
 | ID | Item | Files | Status | Notes |
 |----|------|-------|--------|-------|
-| 8 | Add `resetGameState` helper for state transition | `src/game/engine.ts`, `src/game/state/state-manager.ts` | Pending | `_handleStateTransitions` resets ~15 fields inline; extract a helper. |
-| 9 | Add comment or refactor bullet-collision loop | `src/game/engine.ts` | Pending | `i--` after `splice` is correct but subtle; make intent clearer. |
-| 10 | Fill in empty `README.md` | `README.md` | Pending | Add project description, build/test instructions, and run commands. |
+| 8 | Add `resetGameState` helper for state transition | `src/game/engine.ts`, `src/game/system/state-manager.ts` | Done | Extracted `resetGameState(g)` and used it in `_handleStateTransitions`; test added. |
+| 9 | Add comment or refactor bullet-collision loop | `src/game/engine.ts` | Done | Added comment explaining the splice + `i--` pattern. |
+| 10 | Fill in empty `README.md` | `README.md` | Done | Added description, controls, install/run/test instructions, and project structure. |
 
 ---
 
