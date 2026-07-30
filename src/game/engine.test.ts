@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { rectsOverlap, hexToRgb } from './geometry';
 import { getLeaderboard, addToLeaderboard } from './leaderboard';
 import { LEADERBOARD_KEY, HIGH_SCORE_KEY } from './config';
-import { COLORS, GAME_CONFIG } from './config';
+import { COLORS, GAME_CONFIG, SPRITES } from './config';
 import { GameEngine } from './engine';
 import type { UIState } from './types';
 
@@ -30,6 +30,14 @@ describe('constants', () => {
   it('COLORS are defined', () => {
     expect(COLORS.bg).toBeDefined();
     expect(COLORS.player).toBeDefined();
+  });
+
+  it('SPRITES.player rows have consistent width', () => {
+    const playerSprite = SPRITES.player;
+    const firstRowLength = playerSprite[0].length;
+    for (const row of playerSprite) {
+      expect(row.length).toBe(firstRowLength);
+    }
   });
 });
 

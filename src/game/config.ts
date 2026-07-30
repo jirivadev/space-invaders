@@ -214,8 +214,8 @@ export const SPRITES = {
     '--xxxxx--',
     'xxxxxxxxx',
     'xxxxxxxxx',
-    'x-xxx-x-',
-    'x-x-x-x-',
+    'x-xxx-x--',
+    'x-x-x-x--',
   ],
   thrust1: [
     '-x-x-',
