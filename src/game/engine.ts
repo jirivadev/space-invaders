@@ -214,6 +214,8 @@ export class GameEngine {
             break;
           }
         }
+        // The bullet was spliced out above; the loop's i-- will revisit this
+        // index, so skip the remaining collision checks for this iteration.
         if (!g.bullets[i]) continue;
       }
 
