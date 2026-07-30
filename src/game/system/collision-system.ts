@@ -9,7 +9,11 @@ import type {
 } from "../types";
 import { COLORS, ALIEN_POINTS, GAME_CONFIG } from "../config";
 import { rectsOverlap } from "../geometry";
-import { createExplosionParticles, createImpactFlash } from "./entity-factory";
+import {
+  createExplosionParticles,
+  createImpactFlash,
+  damageShieldRect,
+} from "./entity-factory";
 
 export class CollisionSystem {
   checkBulletPlayerCollision(bullet: Bullet, player: Player): boolean {

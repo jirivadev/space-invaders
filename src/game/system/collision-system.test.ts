@@ -158,6 +158,16 @@ describe('CollisionSystem', () => {
       expect(result).toBe(true);
       expect(state.particles.length).toBeGreaterThan(0);
     });
+
+    it('damages shield pixels in the bullet rect', () => {
+      const state = createMockState();
+      const bullet = makeBullet({ x: 120, y: 490, w: 4, h: 12 });
+      const shield = makeShield({ x: 110, y: 480, cols: 24, rows: 16, pixelSize: 3 });
+      const beforeAliveCount = shield.pixels.flat().filter(Boolean).length;
+      system.checkPlayerBulletShield(bullet, shield, state);
+      const afterAliveCount = shield.pixels.flat().filter(Boolean).length;
+      expect(afterAliveCount).toBeLessThan(beforeAliveCount);
+    });
   });
 
   describe('checkPowerUpCollision', () => {
