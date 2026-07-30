@@ -69,6 +69,8 @@ export class CollisionSystem {
     };
     if (!rectsOverlap(bullet, shieldRect)) return false;
 
+    damageShieldRect(shield, bullet.x, bullet.y, bullet.w, bullet.h);
+
     if (state.particles.length < GAME_CONFIG.particle.maxCount) {
       state.particles.push(
         ...createExplosionParticles(

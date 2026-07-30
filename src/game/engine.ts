@@ -138,6 +138,7 @@ export class GameEngine {
     this.physicsSystem.updateCooldowns(g, dt);
     this.physicsSystem.updatePlayerInvulnerability(g, dt);
     this.physicsSystem.updateShake(dt);
+    g.levelAnnounceTimer = Math.max(0, g.levelAnnounceTimer - dt);
 
     // UFO logic
     this.physicsSystem.updateUFO(g, dt);

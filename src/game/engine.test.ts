@@ -305,6 +305,36 @@ describe('GameEngine smoke', () => {
     engine.stop();
   });
 
+  it('decrements levelAnnounceTimer during gameplay', () => {
+    const onUIChange = vi.fn();
+    const engine = new GameEngine(canvas, { onUIChange });
+    engine.start();
+    engine.setStatus('playing');
+
+    const engineAny = engine as unknown as { _frame(): void; g: { levelAnnounceTimer: number } };
+    engineAny.g.levelAnnounceTimer = 1000;
+    engineAny._frame();
+    expect(engineAny.g.levelAnnounceTimer).toBeLessThan(1000);
+    expect(engineAny.g.levelAnnounceTimer).toBeGreaterThanOrEqual(0);
+
+    engine.stop();
+  });
+
+  it('expires levelAnnounceTimer to 0 after enough frames', () => {
+    const onUIChange = vi.fn();
+    const engine = new GameEngine(canvas, { onUIChange });
+    engine.start();
+    engine.setStatus('playing');
+
+    const engineAny = engine as unknown as { _frame(): void; g: { levelAnnounceTimer: number } };
+    engineAny.g.levelAnnounceTimer = 10;
+    engineAny._frame();
+    engineAny._frame();
+    expect(engineAny.g.levelAnnounceTimer).toBe(0);
+
+    engine.stop();
+  });
+
   it('_handleStateTransitions is reachable via status changes', () => {
     const onUIChange = vi.fn();
     const engine = new GameEngine(canvas, { onUIChange });
