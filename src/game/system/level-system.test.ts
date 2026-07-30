@@ -77,6 +77,7 @@ describe('LevelSystem', () => {
       expect(g.aliens.length).toBeGreaterThan(0);
       expect(g.alienDir).toBe(1);
       expect(g.ufoTimer).toBe(2000);
+      expect(g.levelAnnounceTimer).toBe(2000);
     });
   });
 
