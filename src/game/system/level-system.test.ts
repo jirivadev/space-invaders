@@ -44,7 +44,7 @@ describe('LevelSystem', () => {
       expect(interval).toBe(350);
     });
 
-    it('enforces floor of 80 at higher difficulty levels', () => {
+    it('allows interval to drop below 80 at higher difficulty levels', () => {
       // Create a situation where the formula would produce < 80
       const aliens = Array.from({ length: 55 }, (_, i) =>
         makeAlien({ alive: i === 0, x: 100 + i * 10 })

@@ -195,6 +195,9 @@ export class GameEngine {
     // Process player death — spawn explosion after death animation
     this._processPlayerDeath(g, now);
 
+    // Enforce global particle cap after all particle sources
+    this.physicsSystem.enforceParticleCap(g);
+
     this._notifyUI();
   }
 

@@ -287,6 +287,28 @@ describe('PhysicsSystem', () => {
       expect(g.particles[0].x).toBe(100);
       expect(g.particles[0].y).toBe(100);
     });
+
+    it('caps particles at maxCount', () => {
+      const g = createMockState({
+        particles: Array.from({ length: GAME_CONFIG.particle.maxCount + 100 }, () => ({
+          x: 100, y: 100, vx: 0, vy: 0, life: 100, maxLife: 100, color: '#fff', size: 1, type: 'spark' as const,
+        })),
+      });
+      system.updateParticles(g, 1);
+      expect(g.particles.length).toBeLessThanOrEqual(GAME_CONFIG.particle.maxCount);
+    });
+  });
+
+  describe('enforceParticleCap', () => {
+    it('truncates particles to maxCount', () => {
+      const g = createMockState({
+        particles: Array.from({ length: GAME_CONFIG.particle.maxCount + 50 }, () => ({
+          x: 0, y: 0, vx: 0, vy: 0, life: 100, maxLife: 100, color: '#fff', size: 1, type: 'spark' as const,
+        })),
+      });
+      system.enforceParticleCap(g);
+      expect(g.particles.length).toBe(GAME_CONFIG.particle.maxCount);
+    });
   });
 
   describe('damageShieldsWithAliens', () => {

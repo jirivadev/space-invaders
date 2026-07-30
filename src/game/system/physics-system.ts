@@ -60,7 +60,7 @@ export class PhysicsSystem {
       g.ufo.x += g.ufo.dx;
       if (g.ufo.x > GAME_CONFIG.canvas.width + 50 || g.ufo.x + g.ufo.w < -50) {
         g.ufo = null;
-      g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
+        g.ufoTimer = GAME_CONFIG.ufo.timerMin + Math.random() * GAME_CONFIG.ufo.timerRange;
       }
     }
   }
