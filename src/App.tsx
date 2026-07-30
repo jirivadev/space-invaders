@@ -10,22 +10,15 @@ const initialUI: UIState = {
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const engineRef = useRef<GameEngine | null>(null);
   const [ui, setUi] = useState<UIState>(initialUI);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const engine = new GameEngine(canvas, {
-      onUIChange: setUi,
-      onAddToLeaderboard: (name, score) => engineRef.current?.addToLeaderboard(name, score),
-      onStateChange: (status) => engineRef.current?.setStatus(status),
-    });
-    engineRef.current = engine;
+    const engine = new GameEngine(canvas, { onUIChange: setUi });
     engine.start();
     return () => {
       engine.stop();
-      engineRef.current = null;
     };
   }, []);
 

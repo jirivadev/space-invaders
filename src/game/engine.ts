@@ -54,8 +54,10 @@ export class GameEngine {
 
     // Initialize systems
     this.inputHandler = new InputHandler({
-      ...callbacks,
+      onUIChange: callbacks.onUIChange,
       onGetState: () => this.g!,
+      onAddToLeaderboard: (name, score) => this.submitLeaderboard(name, score),
+      onStateChange: (status) => this.setStatus(status),
     });
     this.collisionSystem = new CollisionSystem();
     this.physicsSystem = new PhysicsSystem();
@@ -75,7 +77,7 @@ export class GameEngine {
   }
 
   // Called by InputHandler via onAddToLeaderboard callback
-  addToLeaderboard(name: string, score: number): void {
+  submitLeaderboard(name: string, score: number): void {
     addToLeaderboard(name, score);
     if (this.g) {
       this.g.leaderboardCache = getLeaderboard();

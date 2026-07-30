@@ -290,11 +290,11 @@ describe('GameEngine smoke', () => {
     engine.stop();
   });
 
-  it('addToLeaderboard writes through to localStorage', () => {
+  it('submitLeaderboard writes through to localStorage', () => {
     const engine = new GameEngine(canvas, { onUIChange: vi.fn() });
     engine.start();
 
-    engine.addToLeaderboard('TestPlayer', 5000);
+    engine.submitLeaderboard('TestPlayer', 5000);
     const stored = mockStore[GAME_CONFIG.leaderboard.key];
     expect(stored).toBeDefined();
     const parsed = JSON.parse(stored!);
