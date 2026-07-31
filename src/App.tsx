@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { GameEngine } from "./game/engine";
 import type { UIState } from "./game/types";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "./game/config";
+import HUD from "./components/HUD";
+import PowerUpBanner from "./components/PowerUpBanner";
+import ControlsHint from "./components/ControlsHint";
 
 const initialUI: UIState = {
   score: 0,
@@ -51,38 +54,17 @@ export default function App() {
           }}
         />
       </div>
-      <div className="flex w-full max-w-4xl flex-wrap items-center justify-between gap-2 px-2 text-sm text-slate-400 md:text-base">
-        <p>
-          Score: <span className="text-green-400">{ui.score}</span>
-        </p>
-        <p>
-          High Score: <span className="text-yellow-400">{ui.highScore}</span>
-        </p>
-        <p>
-          Level: <span className="text-blue-400">{ui.level}</span>
-        </p>
-        <p>
-          Lives:{" "}
-          <span className="text-red-400">
-            {"❤".repeat(Math.max(0, ui.lives))}
-          </span>
-        </p>
-      </div>
-      {(ui.rapidFireTime > 0 || ui.shieldTime > 0) && (
-        <div className="flex w-full max-w-4xl justify-center gap-6 px-2 text-sm md:text-base font-semibold">
-          {ui.rapidFireTime > 0 && (
-            <span className="text-orange-500 animate-pulse">
-              ⚡ Rapid Fire: {ui.rapidFireTime}s
-            </span>
-          )}
-          {ui.shieldTime > 0 && (
-            <span className="text-blue-400 animate-pulse">
-              🛡️ Shield: {ui.shieldTime}s
-            </span>
-          )}
-        </div>
-      )}
-      <p className="text-xs text-slate-500">Move: ← → or A D • Shoot: SPACE</p>
+      <HUD
+        score={ui.score}
+        highScore={ui.highScore}
+        level={ui.level}
+        lives={ui.lives}
+      />
+      <PowerUpBanner
+        rapidFireTime={ui.rapidFireTime}
+        shieldTime={ui.shieldTime}
+      />
+      <ControlsHint />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { CollisionSystem } from "./system/collision-system";
 import { PhysicsSystem } from "./system/physics-system";
 import { LevelSystem, getLevelConfig } from "./system/level-system";
 import { RenderingSystem } from "./system/rendering-system";
+import { UIRenderingSystem } from "./system/ui-rendering";
 import { handleBulletCollisions } from "./system/bullet-collision-handler";
 import {
   createInitialState,
@@ -33,6 +34,7 @@ export class GameEngine {
   private physicsSystem: PhysicsSystem;
   private levelSystem: LevelSystem;
   private renderingSystem: RenderingSystem;
+  private uiRendering: UIRenderingSystem;
 
   private lastUI: {
     score: number;
@@ -65,6 +67,7 @@ export class GameEngine {
     this.physicsSystem = new PhysicsSystem();
     this.levelSystem = new LevelSystem();
     this.renderingSystem = new RenderingSystem();
+    this.uiRendering = new UIRenderingSystem();
   }
 
   start() {
@@ -300,20 +303,16 @@ export class GameEngine {
     this.renderingSystem.drawPowerUps(ctx, g.powerUps, now);
     this.renderingSystem.drawBullets(ctx, g.bullets);
     this.renderingSystem.drawParticles(ctx, g.particles);
-    this.renderingSystem.drawHUD(ctx, g.score, g.highScore, g.lives, g.level);
-    this.renderingSystem.drawLevelAnnouncement(
-      ctx,
-      g.level,
-      g.levelAnnounceTimer
-    );
+    this.uiRendering.drawHUD(ctx, g.score, g.highScore, g.lives, g.level);
+    this.uiRendering.drawLevelAnnouncement(ctx, g.level, g.levelAnnounceTimer);
 
     // Draw screens based on status
     if (g.status === "menu") {
-      this.renderingSystem.drawMenu(ctx, g.leaderboardCache, now);
+      this.uiRendering.drawMenu(ctx, g.leaderboardCache, now);
     } else if (g.status === "gameover") {
-      this.renderingSystem.drawGameOver(ctx, g.score, now, g.screenOpenedAt);
+      this.uiRendering.drawGameOver(ctx, g.score, now, g.screenOpenedAt);
     } else if (g.status === "nameEntry") {
-      this.renderingSystem.drawNameEntry(
+      this.uiRendering.drawNameEntry(
         ctx,
         g.pendingName,
         g.score,
