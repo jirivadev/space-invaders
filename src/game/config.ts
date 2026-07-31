@@ -1,4 +1,4 @@
-import type { Alien } from './types';
+import type { Alien } from "./types";
 
 /**
  * Game Configuration
@@ -9,8 +9,8 @@ import type { Alien } from './types';
 // Exported individually — these are imported directly by consumer files.
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 640;
-export const LEADERBOARD_KEY = 'space-invaders-leaderboard';
-export const HIGH_SCORE_KEY = 'space-invaders-highscore';
+export const LEADERBOARD_KEY = "space-invaders-leaderboard";
+export const HIGH_SCORE_KEY = "space-invaders-highscore";
 export const MAX_LEADERBOARD_ENTRIES = 10;
 export const UFO_TIMER_MIN = 10000;
 export const UFO_TIMER_RANGE = 15000;
@@ -19,7 +19,7 @@ export const SHIELD_POSITIONS = [110, 290, 470, 650] as const;
 /**
  * Alien type → point value mapping
  */
-export const ALIEN_POINTS: Record<Alien['type'], number> = {
+export const ALIEN_POINTS: Record<Alien["type"], number> = {
   squid: 30,
   crab: 20,
   octopus: 10,
@@ -69,6 +69,14 @@ const PARTICLE_LIFE_DECAY_PER_FRAME = 60;
 
 const DEATH_ANIMATION_DURATION = 150;
 const PLAYER_DEATH_DURATION = 300;
+
+const POWER_UP_DURATION = 8000;
+const POWER_UP_SPAWN_CHANCE = 0.1;
+const POWER_UP_FALL_SPEED = 2;
+const UFO_POINTS = [50, 100, 150, 300] as const;
+const PLAYER_HIT_INVULNERABILITY_MS = 2000;
+const LEVEL_ANNOUNCE_DURATION = 2000;
+const LEVEL_COMPLETE_UFO_TIMER = 2000;
 
 /**
  * Complete game configuration object
@@ -130,6 +138,14 @@ export const GAME_CONFIG = {
     speed: UFO_SPEED,
     timerMin: UFO_TIMER_MIN,
     timerRange: UFO_TIMER_RANGE,
+    points: UFO_POINTS,
+  },
+
+  // Power-up Configuration
+  powerUp: {
+    duration: POWER_UP_DURATION,
+    spawnChance: POWER_UP_SPAWN_CHANCE,
+    fallSpeed: POWER_UP_FALL_SPEED,
   },
 
   // Leaderboard Configuration
@@ -149,8 +165,15 @@ export const GAME_CONFIG = {
 
   // UI & Display
   ui: {
-    invulnerabilityBlinkInterval: 80,  // milliseconds
+    invulnerabilityBlinkInterval: 80, // milliseconds
     nameEntryMaxChars: PLAYER_NAME_MAX_LENGTH,
+  },
+
+  // Gameplay timings (ms)
+  gameplay: {
+    playerHitInvulnerability: PLAYER_HIT_INVULNERABILITY_MS,
+    levelAnnounceDuration: LEVEL_ANNOUNCE_DURATION,
+    levelCompleteUFOTimer: LEVEL_COMPLETE_UFO_TIMER,
   },
 
   // Death animation durations (ms)
@@ -182,26 +205,47 @@ export interface Colors {
  * Game colors
  */
 export const COLORS = {
-  bg: '#050505',
-  player: '#4ade80',
-  playerBullet: '#facc15',
-  alienBullet: '#f87171',
-  squid: '#67e8f9',
-  crab: '#f0abfc',
-  octopus: '#86efac',
-  ufo: '#f87171',
-  shield: '#4ade80',
-  text: '#ffffff',
-  star: '#94a3b8',
+  bg: "#050505",
+  player: "#4ade80",
+  playerBullet: "#facc15",
+  alienBullet: "#f87171",
+  squid: "#67e8f9",
+  crab: "#f0abfc",
+  octopus: "#86efac",
+  ufo: "#f87171",
+  shield: "#4ade80",
+  text: "#ffffff",
+  star: "#94a3b8",
 } as const satisfies Colors;
 
 /**
  * Star layer configurations
  */
 export const STAR_LAYERS = [
-  { count: 50, minSize: 1, maxSize: 1, speed: 0.3, minAlpha: 0.2, maxAlpha: 0.5 },
-  { count: 30, minSize: 1, maxSize: 2, speed: 0.8, minAlpha: 0.4, maxAlpha: 0.7 },
-  { count: 15, minSize: 2, maxSize: 3, speed: 1.5, minAlpha: 0.6, maxAlpha: 1.0 },
+  {
+    count: 50,
+    minSize: 1,
+    maxSize: 1,
+    speed: 0.3,
+    minAlpha: 0.2,
+    maxAlpha: 0.5,
+  },
+  {
+    count: 30,
+    minSize: 1,
+    maxSize: 2,
+    speed: 0.8,
+    minAlpha: 0.4,
+    maxAlpha: 0.7,
+  },
+  {
+    count: 15,
+    minSize: 2,
+    maxSize: 3,
+    speed: 1.5,
+    minAlpha: 0.6,
+    maxAlpha: 1.0,
+  },
 ] as const;
 
 /**
@@ -209,91 +253,69 @@ export const STAR_LAYERS = [
  */
 export const SPRITES = {
   player: [
-    '----x----',
-    '---xxx---',
-    '--xxxxx--',
-    'xxxxxxxxx',
-    'xxxxxxxxx',
-    'x-xxx-x--',
-    'x-x-x-x--',
+    "----x----",
+    "---xxx---",
+    "--xxxxx--",
+    "xxxxxxxxx",
+    "xxxxxxxxx",
+    "x-xxx-x--",
+    "x-x-x-x--",
   ],
-  thrust1: [
-    '-x-x-',
-    'xxxxx',
-    '-xxx-',
-    '--x--',
-  ],
-  thrust2: [
-    'x-x-x',
-    '-xxx-',
-    'xxxxx',
-    '-xxx-',
-  ],
-  death1: [
-    'x---x',
-    '-xxx-',
-    'xxxxx',
-    '-xxx-',
-    'x---x',
-  ],
-  death2: [
-    'x-x-x',
-    '-x-x-',
-    'xxxxx',
-    '-x-x-',
-    'x-x-x',
-  ],
+  thrust1: ["-x-x-", "xxxxx", "-xxx-", "--x--"],
+  thrust2: ["x-x-x", "-xxx-", "xxxxx", "-xxx-"],
+  death1: ["x---x", "-xxx-", "xxxxx", "-xxx-", "x---x"],
+  death2: ["x-x-x", "-x-x-", "xxxxx", "-x-x-", "x-x-x"],
   powerUp: [
-    '--xxxxxx--',
-    '-xxxxxxxx-',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    '-xxxxxxxx-',
-    '--xxxxxx--',
+    "--xxxxxx--",
+    "-xxxxxxxx-",
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "-xxxxxxxx-",
+    "--xxxxxx--",
   ],
   squid: [
-    '---xx---',
-    '--xxxx--',
-    '-xxxxxx-',
-    '-xx-xx--',
-    '-xxxxxx-',
-    '--x--x--',
-    '-x----x-',
-    '--------',
+    "---xx---",
+    "--xxxx--",
+    "-xxxxxx-",
+    "-xx-xx--",
+    "-xxxxxx-",
+    "--x--x--",
+    "-x----x-",
+    "--------",
   ],
   crab: [
-    '--x---x--',
-    '---x-x---',
-    '--xxxxx--',
-    '-xxxxxxx-',
-    'xxxxxxxx-',
-    'xxx-xxx--',
-    'x-x-x-x--',
-    '---x-x---',
+    "--x---x--",
+    "---x-x---",
+    "--xxxxx--",
+    "-xxxxxxx-",
+    "xxxxxxxx-",
+    "xxx-xxx--",
+    "x-x-x-x--",
+    "---x-x---",
   ],
   octopus: [
-    '--xxxxxx--',
-    '-xxxxxxxx-',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxxxxxxxxx',
-    'xxx-xxx-xxx',
-    'xx-x---x-xx',
-    '---x---x---',
+    "--xxxxxx--",
+    "-xxxxxxxx-",
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "xxxxxxxxxx",
+    "xxx-xxx-xxx",
+    "xx-x---x-xx",
+    "---x---x---",
   ],
   ufo: [
-    '-----xxxxxx-----',
-    '---xxxxxxxxxx---',
-    '--xxxxxxxxxxxx--',
-    '-xxxxxxxxxxxxxx-',
-    '-xxxxxxxxxxxxxx-',
-    'xx-xxxxxxxxxx-xx',
-    'x---xxxxxxxx---x',
-    '-----xxxxxx-----',
+    "-----xxxxxx-----",
+    "---xxxxxxxxxx---",
+    "--xxxxxxxxxxxx--",
+    "-xxxxxxxxxxxxxx-",
+    "-xxxxxxxxxxxxxx-",
+    "xx-xxxxxxxxxx-xx",
+    "x---xxxxxxxx---x",
+    "-----xxxxxx-----",
   ],
 } as const;
 
@@ -302,33 +324,33 @@ export const SPRITES = {
  */
 export const SPRITES_2 = {
   squid: [
-    '--------',
-    '---xx---',
-    '---xx---',
-    '--xxxx--',
-    '--x--x--',
-    '-x----x-',
-    '--------',
-    '--------',
+    "--------",
+    "---xx---",
+    "---xx---",
+    "--xxxx--",
+    "--x--x--",
+    "-x----x-",
+    "--------",
+    "--------",
   ],
   crab: [
-    '---------',
-    '---------',
-    '--xxxxx--',
-    '-xxxxxxx-',
-    '-xxxxxxx-',
-    'x-xxxxx-x',
-    '--x---x--',
-    '---------',
+    "---------",
+    "---------",
+    "--xxxxx--",
+    "-xxxxxxx-",
+    "-xxxxxxx-",
+    "x-xxxxx-x",
+    "--x---x--",
+    "---------",
   ],
   octopus: [
-    '----------',
-    '----------',
-    '--xxxxxx--',
-    '-xxxxxxxx-',
-    '-xxxxxxxx-',
-    'xxxxxxxxxx',
-    'xxx-xxx-xxx',
-    '---x---x---',
+    "----------",
+    "----------",
+    "--xxxxxx--",
+    "-xxxxxxxx-",
+    "-xxxxxxxx-",
+    "xxxxxxxxxx",
+    "xxx-xxx-xxx",
+    "---x---x---",
   ],
 };

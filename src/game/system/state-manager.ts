@@ -49,6 +49,10 @@ export function createInitialState(
   lives: number = 3,
   status: GameStatus = "menu"
 ): GameState {
+  const initialAliens = createAliens(
+    getLevelConfig(1).formation,
+    getLevelConfig(1).startY
+  );
   return {
     status,
     score,
@@ -56,7 +60,9 @@ export function createInitialState(
     level: 1,
     levelAnnounceTimer: 0,
     lives,
-    aliens: createAliens(getLevelConfig(1).formation, getLevelConfig(1).startY),
+    aliens: initialAliens,
+    aliveAliens: initialAliens.filter((a) => a.alive && a.dyingAt === 0),
+    activeAliens: initialAliens.filter((a) => a.alive),
     bullets: [],
     shields: SHIELD_POSITIONS.map((x: number) =>
       createShield(x, GAME_CONFIG.shield.y)
@@ -104,6 +110,11 @@ export function setMenu(g: GameState): void {
   g.levelAnnounceTimer = 0;
   g.ufo = null;
   g.screenOpenedAt = performance.now();
+}
+
+export function refreshAlienCaches(g: GameState): void {
+  g.aliveAliens = g.aliens.filter((a) => a.alive && a.dyingAt === 0);
+  g.activeAliens = g.aliens.filter((a) => a.alive);
 }
 
 export function setGameOver(g: GameState, saveHighScore: boolean = true) {

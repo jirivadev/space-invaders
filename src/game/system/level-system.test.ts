@@ -1,18 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LevelSystem } from './level-system';
-import { GAME_CONFIG } from '../config';
-import { createMockState, makeAlien } from '../test-utils/factory';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { LevelSystem } from "./level-system";
+import { GAME_CONFIG } from "../config";
+import { createMockState, makeAlien } from "../test-utils/factory";
 
-describe('LevelSystem', () => {
+describe("LevelSystem", () => {
   let system: LevelSystem;
 
   beforeEach(() => {
     system = new LevelSystem();
   });
 
-  describe('getAlienStepInterval', () => {
-    it('returns correct interval when all aliens are alive', () => {
-      const aliens = Array.from({ length: 5 }, () => makeAlien({ alive: true }));
+  describe("getAlienStepInterval", () => {
+    it("returns correct interval when all aliens are alive", () => {
+      const aliens = Array.from({ length: 5 }, () =>
+        makeAlien({ alive: true })
+      );
       const g = createMockState({ level: 1, aliens });
       const interval = system.getAlienStepInterval(g);
       // total = 5, alive = 5, speedFactor = (5/5)^1.6 = 1^1.6 = 1
@@ -20,7 +22,7 @@ describe('LevelSystem', () => {
       expect(interval).toBe(350);
     });
 
-    it('clamps to 80 when few aliens remain', () => {
+    it("clamps to 80 when few aliens remain", () => {
       const aliens = [
         makeAlien({ alive: true }),
         makeAlien({ alive: false }),
@@ -35,7 +37,7 @@ describe('LevelSystem', () => {
       expect(interval).toBe(80);
     });
 
-    it('handles zero alive aliens (Math.max(1, 0) guard)', () => {
+    it("handles zero alive aliens (Math.max(1, 0) guard)", () => {
       const aliens = [makeAlien({ alive: false })];
       const g = createMockState({ level: 1, aliens });
       const interval = system.getAlienStepInterval(g);
@@ -44,7 +46,7 @@ describe('LevelSystem', () => {
       expect(interval).toBe(350);
     });
 
-    it('allows interval to drop below 80 at higher difficulty levels', () => {
+    it("allows interval to drop below 80 at higher difficulty levels", () => {
       // Create a situation where the formula would produce < 80
       const aliens = Array.from({ length: 55 }, (_, i) =>
         makeAlien({ alive: i === 0, x: 100 + i * 10 })
@@ -61,14 +63,14 @@ describe('LevelSystem', () => {
     });
   });
 
-  describe('checkLevelComplete', () => {
-    it('returns false when some aliens are alive', () => {
+  describe("checkLevelComplete", () => {
+    it("returns false when some aliens are alive", () => {
       const aliens = [makeAlien({ alive: true }), makeAlien({ alive: true })];
       const g = createMockState({ aliens });
       expect(system.checkLevelComplete(g)).toBe(false);
     });
 
-    it('returns true when all aliens are dead and increments level', () => {
+    it("returns true when all aliens are dead and increments level", () => {
       const aliens = [makeAlien({ alive: false }), makeAlien({ alive: false })];
       const g = createMockState({ level: 1, aliens });
       const result = system.checkLevelComplete(g);
@@ -81,50 +83,50 @@ describe('LevelSystem', () => {
     });
   });
 
-  describe('checkAlienReachedPlayer', () => {
-    it('does not change status when no aliens are near the ground', () => {
+  describe("checkAlienReachedPlayer", () => {
+    it("does not change status when no aliens are near the ground", () => {
       const aliens = [makeAlien({ y: 100 })]; // groundY = 600, so y+h = 124
-      const g = createMockState({ status: 'playing', aliens });
+      const g = createMockState({ status: "playing", aliens });
       system.checkAlienReachedPlayer(g);
-      expect(g.status).toBe('playing');
+      expect(g.status).toBe("playing");
     });
 
-    it('sets status to gameover when an alien reaches the ground', () => {
+    it("sets status to gameover when an alien reaches the ground", () => {
       const groundY = GAME_CONFIG.canvas.groundY; // 600
       const aliens = [makeAlien({ y: groundY - 10, h: 20 })]; // y+h = 610 > 600
-      const g = createMockState({ status: 'playing', aliens });
+      const g = createMockState({ status: "playing", aliens });
       system.checkAlienReachedPlayer(g);
-      expect(g.status).toBe('gameover');
+      expect(g.status).toBe("gameover");
     });
   });
 
-  describe('spawnAlienBullet', () => {
-    it('does not add a bullet when there are no aliens', () => {
+  describe("spawnAlienBullet", () => {
+    it("does not add a bullet when there are no aliens", () => {
       const g = createMockState({ aliens: [] });
       system.spawnAlienBullet(g);
       expect(g.bullets.length).toBe(0);
     });
 
-    it('adds exactly one alien bullet when aliens exist', () => {
+    it("adds exactly one alien bullet when aliens exist", () => {
       const aliens = [makeAlien({ x: 100, y: 100, alive: true })];
       const g = createMockState({ level: 1, aliens });
-      vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      vi.spyOn(Math, "random").mockReturnValue(0.5);
       system.spawnAlienBullet(g);
       expect(g.bullets.length).toBe(1);
-      expect(g.bullets[0].owner).toBe('alien');
+      expect(g.bullets[0].owner).toBe("alien");
       vi.restoreAllMocks();
     });
   });
 
-  describe('updateAlienShootingTimer', () => {
-    it('decrements alienShootTimer by dt', () => {
+  describe("updateAlienShootingTimer", () => {
+    it("decrements alienShootTimer by dt", () => {
       const aliens = [makeAlien({ alive: true }), makeAlien({ alive: true })];
       const g = createMockState({ level: 1, aliens, alienShootTimer: 1000 });
       system.updateAlienShootingTimer(g, 100);
       expect(g.alienShootTimer).toBe(900);
     });
 
-    it('resets timer to shootInterval when it reaches 0', () => {
+    it("resets timer to shootInterval when it reaches 0", () => {
       const aliens = [makeAlien({ alive: true }), makeAlien({ alive: true })];
       const g = createMockState({ level: 1, aliens, alienShootTimer: 50 });
       // dt = 100, so timer goes 50 - 100 = -50, triggers reset
@@ -133,7 +135,7 @@ describe('LevelSystem', () => {
       expect(g.alienShootTimer).toBeGreaterThan(0);
     });
 
-    it('sets timer to 0 when no aliens are alive', () => {
+    it("sets timer to 0 when no aliens are alive", () => {
       const aliens = [makeAlien({ alive: false })];
       const g = createMockState({ aliens, alienShootTimer: 500 });
       system.updateAlienShootingTimer(g, 100);
@@ -144,8 +146,10 @@ describe('LevelSystem', () => {
     // engine.ts:104 in addition to this method, which halved the effective
     // shoot interval. This test pins updateAlienShootingTimer as the sole
     // owner of the decrement.
-    it('decrements by exactly dt (regression for engine double-decrement)', () => {
-      const aliens = Array.from({ length: 10 }, () => makeAlien({ alive: true }));
+    it("decrements by exactly dt (regression for engine double-decrement)", () => {
+      const aliens = Array.from({ length: 10 }, () =>
+        makeAlien({ alive: true })
+      );
       const g = createMockState({ level: 1, aliens, alienShootTimer: 1000 });
       system.updateAlienShootingTimer(g, 50);
       expect(g.alienShootTimer).toBe(950);

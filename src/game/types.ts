@@ -1,4 +1,4 @@
-export type GameStatus = 'menu' | 'playing' | 'gameover' | 'nameEntry';
+export type GameStatus = "menu" | "playing" | "gameover" | "nameEntry";
 
 export interface LeaderboardEntry {
   name: string;
@@ -6,7 +6,8 @@ export interface LeaderboardEntry {
   date: number;
 }
 
-export type FormationType = 'grid' | 'staggered' | 'diamond' | 'compact' | 'wide';
+export type FormationType =
+  "grid" | "staggered" | "diamond" | "compact" | "wide";
 
 export interface LevelConfig {
   formation: FormationType;
@@ -21,7 +22,7 @@ export interface Alien {
   y: number;
   w: number;
   h: number;
-  type: 'squid' | 'crab' | 'octopus';
+  type: "squid" | "crab" | "octopus";
   alive: boolean;
   dyingAt: number;
   pendingScore?: number;
@@ -33,7 +34,7 @@ export interface Bullet {
   w: number;
   h: number;
   dy: number;
-  owner: 'player' | 'alien';
+  owner: "player" | "alien";
   trail: Array<{ x: number; y: number }>;
 }
 
@@ -55,7 +56,7 @@ export interface UFO {
   dyingAt: number;
 }
 
-export type ParticleType = 'spark' | 'debris' | 'fire' | 'flash';
+export type ParticleType = "spark" | "debris" | "fire" | "flash";
 
 export interface Particle {
   x: number;
@@ -88,7 +89,7 @@ export interface Star {
   twinkleOffset: number;
 }
 
-export type PowerUpType = 'rapidFire' | 'shield' | 'bomb';
+export type PowerUpType = "rapidFire" | "shield" | "bomb";
 
 export interface PowerUp {
   x: number;
@@ -108,6 +109,8 @@ export interface GameState {
   levelAnnounceTimer: number;
   lives: number;
   aliens: Alien[];
+  aliveAliens: Alien[];
+  activeAliens: Alien[];
   bullets: Bullet[];
   shields: Shield[];
   ufo: UFO | null;

@@ -1,14 +1,25 @@
-import type { GameState, Bullet, Alien, Player, UFO, Shield, PowerUp } from '../types';
+import type {
+  GameState,
+  Bullet,
+  Alien,
+  Player,
+  UFO,
+  Shield,
+  PowerUp,
+} from "../types";
 
 export function createMockState(overrides: Partial<GameState> = {}): GameState {
+  const aliens = overrides.aliens ?? [];
   return {
-    status: 'playing',
+    status: "playing",
     score: 0,
     highScore: 0,
     level: 1,
     levelAnnounceTimer: 0,
     lives: 3,
-    aliens: [],
+    aliens,
+    aliveAliens: aliens.filter((a) => a.alive && a.dyingAt === 0),
+    activeAliens: aliens.filter((a) => a.alive),
     bullets: [],
     shields: [],
     ufo: null,
@@ -33,7 +44,7 @@ export function createMockState(overrides: Partial<GameState> = {}): GameState {
     stars: [],
     powerUps: [],
     activePowerUps: { rapidFire: 0, shield: 0 },
-    pendingName: '',
+    pendingName: "",
     lastTime: 0,
     initialized: false,
     leaderboardCache: [],
@@ -49,7 +60,7 @@ export function makeBullet(overrides: Partial<Bullet> = {}): Bullet {
     w: 4,
     h: 12,
     dy: -9,
-    owner: 'player',
+    owner: "player",
     trail: [],
     ...overrides,
   };
@@ -61,7 +72,7 @@ export function makeAlien(overrides: Partial<Alien> = {}): Alien {
     y: 100,
     w: 27,
     h: 24,
-    type: 'squid',
+    type: "squid",
     alive: true,
     dyingAt: 0,
     ...overrides,
@@ -113,7 +124,7 @@ export function makePowerUp(overrides: Partial<PowerUp> = {}): PowerUp {
     w: 20,
     h: 20,
     dy: 2,
-    type: 'rapidFire',
+    type: "rapidFire",
     spawnedAt: 0,
     ...overrides,
   };

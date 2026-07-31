@@ -33,7 +33,7 @@ export class CollisionSystem {
     alien.pendingScore = ALIEN_POINTS[alien.type];
 
     // Chance to spawn power-up
-    if (Math.random() < 0.1) {
+    if (Math.random() < GAME_CONFIG.powerUp.spawnChance) {
       const types = ["rapidFire", "shield", "bomb"] as const;
       const type = types[Math.floor(Math.random() * types.length)];
       state.powerUps.push({
@@ -41,7 +41,7 @@ export class CollisionSystem {
         y: alien.y + alien.h / 2 - 10,
         w: 20,
         h: 20,
-        dy: 2,
+        dy: GAME_CONFIG.powerUp.fallSpeed,
         type,
         spawnedAt: performance.now(),
       });
@@ -53,7 +53,10 @@ export class CollisionSystem {
     if (!ufo || ufo.dyingAt > 0) return false;
     if (!rectsOverlap(bullet, ufo)) return false;
 
-    const points = [50, 100, 150, 300][Math.floor(Math.random() * 4)];
+    const points =
+      GAME_CONFIG.ufo.points[
+        Math.floor(Math.random() * GAME_CONFIG.ufo.points.length)
+      ];
     state.score += points;
     ufo.dyingAt = performance.now();
     state.powerUps = []; // Clear power-ups for UFO kill

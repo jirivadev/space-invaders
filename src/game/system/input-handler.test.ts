@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { InputHandler } from './input-handler';
-import { GAME_CONFIG } from '../config';
-import { createMockState } from '../test-utils/factory';
-import type { GameState } from '../types';
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { InputHandler } from "./input-handler";
+import { GAME_CONFIG } from "../config";
+import { createMockState } from "../test-utils/factory";
+import type { GameState } from "../types";
 
 function makeKeyEvent(key: string): KeyboardEvent {
   return { key, preventDefault: vi.fn() } as unknown as KeyboardEvent;
@@ -22,13 +22,18 @@ function setupHandler(g: GameState): HandlerSetup {
     handlers[event] = cb as (...args: unknown[]) => void;
   });
   const removeEventListener = vi.fn();
-  vi.stubGlobal('window', { addEventListener, removeEventListener });
+  vi.stubGlobal("window", { addEventListener, removeEventListener });
 
   const onAddToLeaderboard = vi.fn();
   const onStateChange = vi.fn();
   const onUIChange = vi.fn();
   const onGetState = vi.fn(() => g);
-  const handler = new InputHandler({ onUIChange, onGetState, onAddToLeaderboard, onStateChange });
+  const handler = new InputHandler({
+    onUIChange,
+    onGetState,
+    onAddToLeaderboard,
+    onStateChange,
+  });
   handler.start();
 
   return {
@@ -43,40 +48,40 @@ function setupHandler(g: GameState): HandlerSetup {
   };
 }
 
-describe('InputHandler', () => {
+describe("InputHandler", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  describe('name-entry flow (private _handleNameEntry via keydown)', () => {
+  describe("name-entry flow (private _handleNameEntry via keydown)", () => {
     it('appends printable keys to pendingName when status is "nameEntry"', () => {
-      const g = createMockState({ status: 'nameEntry' });
+      const g = createMockState({ status: "nameEntry" });
       const { handlers, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('A'));
-      handlers.keydown(makeKeyEvent('B'));
-      handlers.keydown(makeKeyEvent('C'));
-      expect(g.pendingName).toBe('ABC');
+      handlers.keydown(makeKeyEvent("A"));
+      handlers.keydown(makeKeyEvent("B"));
+      handlers.keydown(makeKeyEvent("C"));
+      expect(g.pendingName).toBe("ABC");
       stop();
     });
 
-    it('truncates pendingName on Backspace', () => {
-      const g = createMockState({ status: 'nameEntry', pendingName: 'ABC' });
+    it("truncates pendingName on Backspace", () => {
+      const g = createMockState({ status: "nameEntry", pendingName: "ABC" });
       const { handlers, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('Backspace'));
-      expect(g.pendingName).toBe('AB');
+      handlers.keydown(makeKeyEvent("Backspace"));
+      expect(g.pendingName).toBe("AB");
       stop();
     });
 
-    it('Backspace on empty pendingName is a no-op', () => {
-      const g = createMockState({ status: 'nameEntry', pendingName: '' });
+    it("Backspace on empty pendingName is a no-op", () => {
+      const g = createMockState({ status: "nameEntry", pendingName: "" });
       const { handlers, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('Backspace'));
-      expect(g.pendingName).toBe('');
+      handlers.keydown(makeKeyEvent("Backspace"));
+      expect(g.pendingName).toBe("");
       stop();
     });
 
     it(`caps pendingName at nameEntryMaxChars (${GAME_CONFIG.ui.nameEntryMaxChars})`, () => {
-      const g = createMockState({ status: 'nameEntry' });
+      const g = createMockState({ status: "nameEntry" });
       const { handlers, stop } = setupHandler(g);
       for (let i = 0; i < GAME_CONFIG.ui.nameEntryMaxChars + 4; i++) {
         handlers.keydown(makeKeyEvent(String.fromCharCode(65 + (i % 26))));
@@ -86,117 +91,185 @@ describe('InputHandler', () => {
     });
 
     it('on Enter: calls onAddToLeaderboard with trimmed name and transitions to "menu"', () => {
-      const g = createMockState({ status: 'nameEntry', pendingName: 'AAA', score: 1000 });
-      const { handlers, onAddToLeaderboard, onStateChange, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('Enter'));
-      expect(onAddToLeaderboard).toHaveBeenCalledWith('AAA', 1000);
-      expect(onStateChange).toHaveBeenCalledWith('menu');
+      const g = createMockState({
+        status: "nameEntry",
+        pendingName: "AAA",
+        score: 1000,
+      });
+      const { handlers, onAddToLeaderboard, onStateChange, stop } =
+        setupHandler(g);
+      handlers.keydown(makeKeyEvent("Enter"));
+      expect(onAddToLeaderboard).toHaveBeenCalledWith("AAA", 1000);
+      expect(onStateChange).toHaveBeenCalledWith("menu");
       stop();
     });
 
     it('on Enter: uses "AAA" fallback when name is empty', () => {
-      const g = createMockState({ status: 'nameEntry', pendingName: '', score: 500 });
+      const g = createMockState({
+        status: "nameEntry",
+        pendingName: "",
+        score: 500,
+      });
       const { handlers, onAddToLeaderboard, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('Enter'));
-      expect(onAddToLeaderboard).toHaveBeenCalledWith('AAA', 500);
+      handlers.keydown(makeKeyEvent("Enter"));
+      expect(onAddToLeaderboard).toHaveBeenCalledWith("AAA", 500);
       stop();
     });
 
     it('on Enter: uses "AAA" fallback when name is whitespace only', () => {
-      const g = createMockState({ status: 'nameEntry', pendingName: '   ', score: 500 });
+      const g = createMockState({
+        status: "nameEntry",
+        pendingName: "   ",
+        score: 500,
+      });
       const { handlers, onAddToLeaderboard, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('Enter'));
-      expect(onAddToLeaderboard).toHaveBeenCalledWith('AAA', 500);
+      handlers.keydown(makeKeyEvent("Enter"));
+      expect(onAddToLeaderboard).toHaveBeenCalledWith("AAA", 500);
       stop();
     });
 
-    it('on Enter: trims whitespace before sending to leaderboard', () => {
-      const g = createMockState({ status: 'nameEntry', pendingName: '  Hi  ', score: 100 });
+    it("on Enter: trims whitespace before sending to leaderboard", () => {
+      const g = createMockState({
+        status: "nameEntry",
+        pendingName: "  Hi  ",
+        score: 100,
+      });
       const { handlers, onAddToLeaderboard, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('Enter'));
-      expect(onAddToLeaderboard).toHaveBeenCalledWith('Hi', 100);
+      handlers.keydown(makeKeyEvent("Enter"));
+      expect(onAddToLeaderboard).toHaveBeenCalledWith("Hi", 100);
       stop();
     });
 
-    it('preventDefault is called for Enter during name-entry', () => {
-      const g = createMockState({ status: 'nameEntry' });
+    it("preventDefault is called for Enter during name-entry", () => {
+      const g = createMockState({ status: "nameEntry" });
       const { handlers, stop } = setupHandler(g);
-      const e = makeKeyEvent('Enter');
+      const e = makeKeyEvent("Enter");
       handlers.keydown(e);
       expect(e.preventDefault).toHaveBeenCalled();
       stop();
     });
   });
 
-  describe('non-name-entry: key state capture', () => {
-    it('records pressed keys into g.keys', () => {
-      const g = createMockState({ status: 'playing' });
+  describe("non-name-entry: key state capture", () => {
+    it("records pressed keys into g.keys", () => {
+      const g = createMockState({ status: "playing" });
       const { handlers, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('ArrowLeft'));
-      expect(g.keys['ArrowLeft']).toBe(true);
+      handlers.keydown(makeKeyEvent("ArrowLeft"));
+      expect(g.keys["ArrowLeft"]).toBe(true);
       stop();
     });
 
     it('does not enter name-entry flow when status is "playing"', () => {
-      const g = createMockState({ status: 'playing' });
+      const g = createMockState({ status: "playing" });
       const { handlers, onAddToLeaderboard, stop } = setupHandler(g);
-      handlers.keydown(makeKeyEvent('A'));
-      expect(g.pendingName).toBe('');
+      handlers.keydown(makeKeyEvent("A"));
+      expect(g.pendingName).toBe("");
       expect(onAddToLeaderboard).not.toHaveBeenCalled();
       stop();
     });
   });
 
-  describe('processInput', () => {
-    it('moves player left when ArrowLeft is held', () => {
+  describe("processInput", () => {
+    it("moves player left when ArrowLeft is held", () => {
       const g = createMockState({
-        status: 'playing',
+        status: "playing",
         keys: { ArrowLeft: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
+        player: {
+          x: 400,
+          y: 500,
+          w: 27,
+          h: 21,
+          speed: 5,
+          cooldown: 0,
+          invulnerable: 0,
+          diedAt: 0,
+        },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
       expect(g.player.x).toBeLessThan(400);
     });
 
-    it('moves player right when ArrowRight is held', () => {
+    it("moves player right when ArrowRight is held", () => {
       const g = createMockState({
-        status: 'playing',
+        status: "playing",
         keys: { ArrowRight: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
+        player: {
+          x: 400,
+          y: 500,
+          w: 27,
+          h: 21,
+          speed: 5,
+          cooldown: 0,
+          invulnerable: 0,
+          diedAt: 0,
+        },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
       expect(g.player.x).toBeGreaterThan(400);
     });
 
-    it('clamps player.x to left boundary (boundaryPadding)', () => {
+    it("clamps player.x to left boundary (boundaryPadding)", () => {
       const g = createMockState({
-        status: 'playing',
+        status: "playing",
         keys: { ArrowLeft: true },
-        player: { x: GAME_CONFIG.player.boundaryPadding + 1, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
+        player: {
+          x: GAME_CONFIG.player.boundaryPadding + 1,
+          y: 500,
+          w: 27,
+          h: 21,
+          speed: 5,
+          cooldown: 0,
+          invulnerable: 0,
+          diedAt: 0,
+        },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
       expect(g.player.x).toBe(GAME_CONFIG.player.boundaryPadding);
     });
 
-    it('clamps player.x to right boundary (canvas width - w - padding)', () => {
+    it("clamps player.x to right boundary (canvas width - w - padding)", () => {
       const g = createMockState({
-        status: 'playing',
+        status: "playing",
         keys: { ArrowRight: true },
-        player: { x: GAME_CONFIG.canvas.width - 27 - GAME_CONFIG.player.boundaryPadding - 1, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
+        player: {
+          x:
+            GAME_CONFIG.canvas.width -
+            27 -
+            GAME_CONFIG.player.boundaryPadding -
+            1,
+          y: 500,
+          w: 27,
+          h: 21,
+          speed: 5,
+          cooldown: 0,
+          invulnerable: 0,
+          diedAt: 0,
+        },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
-      expect(g.player.x).toBe(GAME_CONFIG.canvas.width - 27 - GAME_CONFIG.player.boundaryPadding);
+      expect(g.player.x).toBe(
+        GAME_CONFIG.canvas.width - 27 - GAME_CONFIG.player.boundaryPadding
+      );
     });
 
     it('does not move the player when status is "menu"', () => {
       const g = createMockState({
-        status: 'menu',
+        status: "menu",
         keys: { ArrowLeft: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
+        player: {
+          x: 400,
+          y: 500,
+          w: 27,
+          h: 21,
+          speed: 5,
+          cooldown: 0,
+          invulnerable: 0,
+          diedAt: 0,
+        },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -205,9 +278,18 @@ describe('InputHandler', () => {
 
     it('does not move the player when status is "nameEntry"', () => {
       const g = createMockState({
-        status: 'nameEntry',
+        status: "nameEntry",
         keys: { ArrowLeft: true },
-        player: { x: 400, y: 500, w: 27, h: 21, speed: 5, cooldown: 0, invulnerable: 0, diedAt: 0 },
+        player: {
+          x: 400,
+          y: 500,
+          w: 27,
+          h: 21,
+          speed: 5,
+          cooldown: 0,
+          invulnerable: 0,
+          diedAt: 0,
+        },
       });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.processInput(g, 16);
@@ -215,53 +297,89 @@ describe('InputHandler', () => {
     });
   });
 
-  describe('checkForShoot', () => {
-    it('returns true when cooldown is 0 and Space is held', () => {
-      const g = createMockState({ keys: { ' ': true } });
+  describe("checkForShoot", () => {
+    it("returns true when cooldown is 0 and Space is held", () => {
+      const g = createMockState({ keys: { " ": true } });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       expect(handler.checkForShoot(g)).toBe(true);
     });
 
-    it('returns false when cooldown is active', () => {
-      const g = createMockState({ keys: { ' ': true }, player: { x: 0, y: 0, w: 27, h: 21, speed: 5, cooldown: 100, invulnerable: 0, diedAt: 0 } });
+    it("returns false when cooldown is active", () => {
+      const g = createMockState({
+        keys: { " ": true },
+        player: {
+          x: 0,
+          y: 0,
+          w: 27,
+          h: 21,
+          speed: 5,
+          cooldown: 100,
+          invulnerable: 0,
+          diedAt: 0,
+        },
+      });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       expect(handler.checkForShoot(g)).toBe(false);
     });
 
-    it('returns false when no shoot key is held', () => {
+    it("returns false when no shoot key is held", () => {
       const g = createMockState({ keys: {} });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       expect(handler.checkForShoot(g)).toBe(false);
     });
   });
 
-  describe('start / stop', () => {
-    it('registers listeners on start', () => {
+  describe("start / stop", () => {
+    it("registers listeners on start", () => {
       const addEventListener = vi.fn();
-      vi.stubGlobal('window', { addEventListener, removeEventListener: vi.fn() });
+      vi.stubGlobal("window", {
+        addEventListener,
+        removeEventListener: vi.fn(),
+      });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.start();
-      expect(addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
-      expect(addEventListener).toHaveBeenCalledWith('keyup', expect.any(Function));
-      expect(addEventListener).toHaveBeenCalledWith('blur', expect.any(Function));
+      expect(addEventListener).toHaveBeenCalledWith(
+        "keydown",
+        expect.any(Function)
+      );
+      expect(addEventListener).toHaveBeenCalledWith(
+        "keyup",
+        expect.any(Function)
+      );
+      expect(addEventListener).toHaveBeenCalledWith(
+        "blur",
+        expect.any(Function)
+      );
     });
 
-    it('removes listeners on stop', () => {
+    it("removes listeners on stop", () => {
       const addEventListener = vi.fn();
       const removeEventListener = vi.fn();
-      vi.stubGlobal('window', { addEventListener, removeEventListener });
+      vi.stubGlobal("window", { addEventListener, removeEventListener });
       const handler = new InputHandler({ onUIChange: vi.fn() });
       handler.start();
       handler.stop();
-      expect(removeEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
-      expect(removeEventListener).toHaveBeenCalledWith('keyup', expect.any(Function));
-      expect(removeEventListener).toHaveBeenCalledWith('blur', expect.any(Function));
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "keydown",
+        expect.any(Function)
+      );
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "keyup",
+        expect.any(Function)
+      );
+      expect(removeEventListener).toHaveBeenCalledWith(
+        "blur",
+        expect.any(Function)
+      );
     });
   });
 
-  describe('blur handling', () => {
-    it('clears g.keys on window blur to avoid stuck-key state', () => {
-      const g = createMockState({ status: 'playing', keys: { ArrowLeft: true, ' ': true } });
+  describe("blur handling", () => {
+    it("clears g.keys on window blur to avoid stuck-key state", () => {
+      const g = createMockState({
+        status: "playing",
+        keys: { ArrowLeft: true, " ": true },
+      });
       const { handlers, stop } = setupHandler(g);
       handlers.blur();
       expect(g.keys).toEqual({});

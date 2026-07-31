@@ -1,23 +1,25 @@
 import type { GameState, GameStatus, GameCallbacks } from "./types";
-import { GAME_CONFIG, STAR_LAYERS, COLORS } from "./config";
+import { GAME_CONFIG, STAR_LAYERS } from "./config";
 import { InputHandler } from "./system/input-handler";
 import { CollisionSystem } from "./system/collision-system";
 import { PhysicsSystem } from "./system/physics-system";
 import { LevelSystem, getLevelConfig } from "./system/level-system";
 import { RenderingSystem } from "./system/rendering-system";
+import { handleBulletCollisions } from "./system/bullet-collision-handler";
 import {
   createInitialState,
   setPlaying,
   setMenu,
-  setGameOver,
   resetGameState,
+  refreshAlienCaches,
 } from "./system/state-manager";
 import { getLeaderboard, addToLeaderboard } from "./leaderboard";
+import { swapRemove } from "./utils";
 import {
   createExplosionParticles,
-  createImpactFlash,
   createAliens,
 } from "./system/entity-factory";
+import { processDeathAnimations } from "./system/death-animation-handler";
 
 export class GameEngine {
   private ctx: CanvasRenderingContext2D | null = null;
@@ -134,6 +136,9 @@ export class GameEngine {
     // Only update gameplay when playing
     if (g.status !== "playing") return;
 
+    // Refresh cached alien arrays after state transitions may have recreated them
+    refreshAlienCaches(g);
+
     // Update timers and power-ups
     this.physicsSystem.updateCooldowns(g, dt);
     this.physicsSystem.updatePlayerInvulnerability(g, dt);
@@ -175,7 +180,10 @@ export class GameEngine {
     this.physicsSystem.damageShieldsWithAliens(g);
 
     // Collision detection - Bullets vs Game Objects
-    this._handleBulletCollisions(g);
+    handleBulletCollisions(g, {
+      collisionSystem: this.collisionSystem,
+      physicsSystem: this.physicsSystem,
+    });
 
     // Power-up collision
     this._handlePowerUpCollisions(g);
@@ -186,105 +194,16 @@ export class GameEngine {
     // Update particles
     this.physicsSystem.updateParticles(g, moveScale);
 
-    // Process dying aliens — spawn explosion after flash duration
-    this._processDyingAliens(g, now);
-
-    // Process dying UFO — spawn explosion after flash duration
-    this._processDyingUFO(g, now);
-
-    // Process player death — spawn explosion after death animation
-    this._processPlayerDeath(g, now);
+    // Process all death animations (aliens, UFO, player)
+    processDeathAnimations(g, now);
 
     // Enforce global particle cap after all particle sources
     this.physicsSystem.enforceParticleCap(g);
 
+    // Refresh cached alien arrays for next frame
+    refreshAlienCaches(g);
+
     this._notifyUI();
-  }
-
-  private _handleBulletCollisions(g: GameState): void {
-    for (let i = g.bullets.length - 1; i >= 0; i--) {
-      const b = g.bullets[i];
-
-      // Check shield damage
-      if (b.owner === "player") {
-        for (const s of g.shields) {
-          if (this.collisionSystem.checkPlayerBulletShield(b, s, g)) {
-            this.physicsSystem.triggerShake(2, 65);
-            g.bullets.splice(i, 1);
-            break;
-          }
-        }
-        // The bullet was spliced out above; the loop's i-- will revisit this
-        // index, so skip the remaining collision checks for this iteration.
-        if (!g.bullets[i]) continue;
-      }
-
-      // Check alien collision
-      if (b.owner === "player") {
-        for (const a of g.aliens) {
-          if (this.collisionSystem.checkBulletAlienCollision(b, a, g)) {
-            this.physicsSystem.triggerShake(4, 130);
-            g.particles.push(
-              createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, "#fef08a", 12)
-            );
-            g.bullets.splice(i, 1);
-            break;
-          }
-        }
-        // Check UFO collision
-        if (g.ufo) {
-          if (this.collisionSystem.checkBulletUFOCollision(b, g.ufo, g)) {
-            g.bullets.splice(i, 1);
-            continue;
-          }
-        }
-        continue;
-      }
-
-      // Check player collision
-      if (b.owner === "alien") {
-        if (this.collisionSystem.checkBulletPlayerCollision(b, g.player)) {
-          if (g.activePowerUps.shield > 0) {
-            g.particles.push(
-              ...createExplosionParticles(
-                b.x + b.w / 2,
-                b.y + b.h / 2,
-                "#3b82f6",
-                8
-              )
-            );
-            g.particles.push(
-              createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, "#93c5fd", 10)
-            );
-            g.bullets.splice(i, 1);
-            continue;
-          }
-          g.lives--;
-          g.player.invulnerable = 2000;
-          this.physicsSystem.triggerShake(5, 130);
-          g.bullets.splice(i, 1);
-
-          if (g.lives <= 0) {
-            this.physicsSystem.triggerShake(8, 250);
-            g.player.diedAt = performance.now();
-          } else {
-            // Non-lethal hit: spawn hit particles immediately
-            g.particles.push(
-              ...createExplosionParticles(
-                g.player.x + g.player.w / 2,
-                g.player.y + g.player.h / 2,
-                "#67e8f9",
-                50
-              )
-            );
-            g.particles.push(
-              createImpactFlash(b.x + b.w / 2, b.y + b.h / 2, "#fca5a5", 14)
-            );
-          }
-          continue;
-        }
-      }
-    }
   }
 
   private _handlePowerUpCollisions(g: GameState): void {
@@ -292,9 +211,9 @@ export class GameEngine {
       const p = g.powerUps[i];
       if (this.collisionSystem.checkPowerUpCollision(p, g.player)) {
         if (p.type === "rapidFire") {
-          g.activePowerUps.rapidFire = 8000;
+          g.activePowerUps.rapidFire = GAME_CONFIG.powerUp.duration;
         } else if (p.type === "shield") {
-          g.activePowerUps.shield = 8000;
+          g.activePowerUps.shield = GAME_CONFIG.powerUp.duration;
         } else if (p.type === "bomb") {
           this.physicsSystem.applyBomb(g);
         }
@@ -307,69 +226,8 @@ export class GameEngine {
         g.particles.push(
           ...createExplosionParticles(p.x + p.w / 2, p.y + p.h / 2, pColor, 10)
         );
-        g.powerUps.splice(i, 1);
+        swapRemove(g.powerUps, i);
       }
-    }
-  }
-
-  private _processDyingAliens(g: GameState, now: number): void {
-    for (let i = g.aliens.length - 1; i >= 0; i--) {
-      const a = g.aliens[i];
-      if (a.dyingAt > 0 && now - a.dyingAt >= GAME_CONFIG.death.alienDuration) {
-        g.score += a.pendingScore ?? 0;
-        a.pendingScore = 0;
-        a.alive = false;
-        a.dyingAt = 0;
-        g.particles.push(
-          ...createExplosionParticles(
-            a.x + a.w / 2,
-            a.y + a.h / 2,
-            COLORS[a.type],
-            40
-          )
-        );
-      }
-    }
-  }
-
-  private _processDyingUFO(g: GameState, now: number): void {
-    if (!g.ufo || g.ufo.dyingAt === 0) return;
-    if (now - g.ufo.dyingAt >= GAME_CONFIG.death.ufoDuration) {
-      g.particles.push(
-        ...createExplosionParticles(
-          g.ufo!.x + g.ufo!.w / 2,
-          g.ufo!.y + g.ufo!.h / 2,
-          COLORS.ufo,
-          40
-        )
-      );
-      g.ufo = null;
-    }
-  }
-
-  private _processPlayerDeath(g: GameState, now: number): void {
-    if (g.player.diedAt === 0) return;
-    if (now - g.player.diedAt >= GAME_CONFIG.death.playerDuration) {
-      // Spawn death explosion particles
-      g.particles.push(
-        ...createExplosionParticles(
-          g.player.x + g.player.w / 2,
-          g.player.y + g.player.h / 2,
-          "#67e8f9",
-          50
-        )
-      );
-      g.particles.push(
-        createImpactFlash(
-          g.player.x + g.player.w / 2,
-          g.player.y + g.player.h / 2,
-          "#fca5a5",
-          14
-        )
-      );
-      g.player.diedAt = 0;
-      // Now transition to game over
-      setGameOver(g);
     }
   }
 

@@ -4,6 +4,8 @@ import type {
   Particle,
   Star,
   UFO,
+  PowerUp,
+  PowerUpType,
   FormationType,
 } from "../types";
 import { GAME_CONFIG, STAR_LAYERS, SPRITES } from "../config";
@@ -184,6 +186,22 @@ export function createUFO(): UFO {
     h,
     dx: GAME_CONFIG.ufo.speed,
     dyingAt: 0,
+  };
+}
+
+export function createPowerUp(
+  x: number,
+  y: number,
+  type: PowerUpType
+): PowerUp {
+  return {
+    x,
+    y,
+    w: 20,
+    h: 20,
+    dy: GAME_CONFIG.powerUp.fallSpeed,
+    type,
+    spawnedAt: performance.now(),
   };
 }
 

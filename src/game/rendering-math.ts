@@ -21,7 +21,7 @@ export interface DeathAnimation {
 export function computeDeathAnimation(
   dyingAt: number,
   now: number,
-  duration: number,
+  duration: number
 ): DeathAnimation | null {
   if (dyingAt <= 0) return null;
 
@@ -46,9 +46,12 @@ export function computeStarTwinkle(
   now: number,
   twinkleOffset: number,
   minAlpha: number,
-  maxAlpha: number,
+  maxAlpha: number
 ): number {
-  return minAlpha + (maxAlpha - minAlpha) * (0.5 + 0.5 * Math.sin(now * 0.003 + twinkleOffset));
+  return (
+    minAlpha +
+    (maxAlpha - minAlpha) * (0.5 + 0.5 * Math.sin(now * 0.003 + twinkleOffset))
+  );
 }
 
 /**
@@ -59,7 +62,7 @@ export function computePlayerDeathFragments(
   centerY: number,
   t: number,
   fragmentCount: number = 4,
-  maxDist: number = 30,
+  maxDist: number = 30
 ): Array<{ x: number; y: number }> {
   const fragments: Array<{ x: number; y: number }> = [];
   for (let i = 0; i < fragmentCount; i++) {
@@ -88,7 +91,7 @@ export interface BulletTrailEntry {
 export function computeBulletTrailEntries(
   trail: Array<{ x: number; y: number }>,
   bulletW: number,
-  bulletH: number,
+  bulletH: number
 ): BulletTrailEntry[] {
   return trail.map((entry, i) => {
     const r = i / trail.length;
@@ -116,7 +119,7 @@ export function computeShimmerSweep(
   textWidth: number,
   speed: number = 0.12,
   padding: number = 200,
-  bandWidth: number = 80,
+  bandWidth: number = 80
 ): ShimmerSweep {
   const sweepPos = ((now * speed) % (textWidth + padding)) - padding / 2;
   return { sweepPos, bandWidth };
@@ -129,7 +132,7 @@ export function computeBlinkAlpha(
   now: number,
   speed: number = 0.003,
   minAlpha: number = 0.4,
-  maxAlpha: number = 1.0,
+  maxAlpha: number = 1.0
 ): number {
   return minAlpha + (maxAlpha - minAlpha) * Math.abs(Math.sin(now * speed));
 }
@@ -140,7 +143,7 @@ export function computeBlinkAlpha(
 export function computeFadeInAlpha(
   elapsed: number,
   duration: number = 400,
-  maxAlpha: number = 0.75,
+  maxAlpha: number = 0.75
 ): number {
   return Math.min(maxAlpha, (elapsed / duration) * maxAlpha);
 }
@@ -158,7 +161,7 @@ export function computeScaleUpAnimation(
   elapsed: number,
   duration: number = 300,
   startScale: number = 1.3,
-  endScale: number = 1.0,
+  endScale: number = 1.0
 ): ScaleUpAnimation {
   const progress = Math.min(1, elapsed / duration);
   const scale = startScale + (endScale - startScale) * progress;
@@ -180,7 +183,7 @@ export function computeShieldAuraDots(
   playerW: number,
   playerH: number,
   now: number,
-  dotCount: number = 6,
+  dotCount: number = 6
 ): ShieldAuraDot[] {
   const auraRadius = Math.max(playerW, playerH) * 0.75;
   const dots: ShieldAuraDot[] = [];
@@ -200,7 +203,7 @@ export function computeShieldAuraDots(
 export function computeAnimationFrameIndex(
   now: number,
   interval: number,
-  frameCount: number = 2,
+  frameCount: number = 2
 ): number {
   return Math.floor(now / interval) % frameCount;
 }
@@ -213,22 +216,28 @@ export function computePowerUpGlowAlpha(
   spawnedAt: number,
   speed: number = 0.004,
   minAlpha: number = 0.3,
-  maxAlpha: number = 0.7,
+  maxAlpha: number = 0.7
 ): number {
   const spawnPhase = spawnedAt * 0.001;
-  return minAlpha + (maxAlpha - minAlpha) * Math.abs(Math.sin(now * speed + spawnPhase));
+  return (
+    minAlpha +
+    (maxAlpha - minAlpha) * Math.abs(Math.sin(now * speed + spawnPhase))
+  );
 }
 
 /**
  * Format a score with zero-padding.
  */
 export function formatPaddedScore(score: number, digits: number = 5): string {
-  return score.toString().padStart(digits, '0');
+  return score.toString().padStart(digits, "0");
 }
 
 /**
  * Compute thrust flicker boolean from time.
  */
-export function computeThrustFlicker(now: number, speed: number = 0.02): boolean {
+export function computeThrustFlicker(
+  now: number,
+  speed: number = 0.02
+): boolean {
   return Math.sin(now * speed) > 0;
 }
