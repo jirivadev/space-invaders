@@ -29,7 +29,8 @@ export const ALIEN_POINTS: Record<Alien["type"], number> = {
 const GROUND_Y = 600;
 const TARGET_FPS = 60;
 const TARGET_DT = 1000 / TARGET_FPS;
-const MAX_DT = 100;
+// Keep collision steps smaller when a frame is delayed to reduce bullet tunneling.
+const MAX_DT = 50;
 
 const SHIELD_COLS = 24;
 const SHIELD_ROWS = 16;
