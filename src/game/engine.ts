@@ -1,5 +1,5 @@
 import type { GameState, GameStatus, GameCallbacks } from "./types";
-import { GAME_CONFIG, STAR_LAYERS } from "./config";
+import { GAME_CONFIG, STAR_LAYERS, EFFECT_COLORS } from "./config";
 import { InputHandler } from "./system/input-handler";
 import { CollisionSystem } from "./system/collision-system";
 import { PhysicsSystem } from "./system/physics-system";
@@ -71,7 +71,7 @@ export class GameEngine {
   }
 
   start() {
-    this.g = createInitialState(0, 3, "menu");
+    this.g = createInitialState(0, 3, "menu", performance.now());
     this.inputHandler.start();
     this.rafId = requestAnimationFrame(this._boundFrame);
   }
@@ -134,7 +134,7 @@ export class GameEngine {
     }
 
     // State transitions
-    this._handleStateTransitions(g);
+    this._handleStateTransitions(g, now);
 
     // Only update gameplay when playing
     if (g.status !== "playing") return;
@@ -180,19 +180,23 @@ export class GameEngine {
     }
 
     // Shield damage from aliens
-    this.physicsSystem.damageShieldsWithAliens(g);
+    this.physicsSystem.damageShieldsWithAliens(g, now);
 
     // Collision detection - Bullets vs Game Objects
-    handleBulletCollisions(g, {
-      collisionSystem: this.collisionSystem,
-      physicsSystem: this.physicsSystem,
-    });
+    handleBulletCollisions(
+      g,
+      {
+        collisionSystem: this.collisionSystem,
+        physicsSystem: this.physicsSystem,
+      },
+      now
+    );
 
     // Power-up collision
     this._handlePowerUpCollisions(g);
 
     // Check if aliens reached player
-    this.levelSystem.checkAlienReachedPlayer(g);
+    this.levelSystem.checkAlienReachedPlayer(g, now);
 
     // Update particles
     this.physicsSystem.updateParticles(g, moveScale);
@@ -222,10 +226,10 @@ export class GameEngine {
         }
         const pColor =
           p.type === "rapidFire"
-            ? "#f97316"
+            ? EFFECT_COLORS.rapidFire
             : p.type === "shield"
-              ? "#3b82f6"
-              : "#ef4444";
+              ? EFFECT_COLORS.shieldAura
+              : EFFECT_COLORS.bomb;
         g.particles.push(
           ...createExplosionParticles(p.x + p.w / 2, p.y + p.h / 2, pColor, 10)
         );
@@ -234,7 +238,7 @@ export class GameEngine {
     }
   }
 
-  private _handleStateTransitions(g: GameState): void {
+  private _handleStateTransitions(g: GameState, now: number): void {
     switch (g.status) {
       case "menu":
         // Check for spacebar to start
@@ -255,7 +259,7 @@ export class GameEngine {
         // Check for spacebar to return to menu
         if (g.keys[" "]) {
           g.keys[" "] = false;
-          setMenu(g);
+          setMenu(g, now);
         }
         break;
 

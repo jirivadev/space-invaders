@@ -87,7 +87,9 @@ describe("LevelSystem", () => {
     // animation completes. Level completion must wait for that payout, or the
     // final kill of every level awards 0 points.
     it("does not complete the level while an alien is still dying", () => {
-      const aliens = [makeAlien({ alive: true, dyingAt: 500, pendingScore: 30 })];
+      const aliens = [
+        makeAlien({ alive: true, dyingAt: 500, pendingScore: 30 }),
+      ];
       const g = createMockState({
         level: 1,
         aliens,
@@ -104,7 +106,7 @@ describe("LevelSystem", () => {
     it("does not change status when no aliens are near the ground", () => {
       const aliens = [makeAlien({ y: 100 })]; // groundY = 600, so y+h = 124
       const g = createMockState({ status: "playing", aliens });
-      system.checkAlienReachedPlayer(g);
+      system.checkAlienReachedPlayer(g, 1000);
       expect(g.status).toBe("playing");
     });
 
@@ -112,7 +114,7 @@ describe("LevelSystem", () => {
       const groundY = GAME_CONFIG.canvas.groundY; // 600
       const aliens = [makeAlien({ y: groundY - 10, h: 20 })]; // y+h = 610 > 600
       const g = createMockState({ status: "playing", aliens });
-      system.checkAlienReachedPlayer(g);
+      system.checkAlienReachedPlayer(g, 1000);
       expect(g.status).toBe("gameover");
     });
   });
@@ -131,6 +133,7 @@ describe("LevelSystem", () => {
       system.spawnAlienBullet(g);
       expect(g.bullets.length).toBe(1);
       expect(g.bullets[0].owner).toBe("alien");
+      expect(g.bullets[0].previousY).toBe(g.bullets[0].y);
       vi.restoreAllMocks();
     });
   });

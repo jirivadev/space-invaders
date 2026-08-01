@@ -6,7 +6,7 @@ import type {
   UFO,
   FormationType,
 } from "../types";
-import { GAME_CONFIG, STAR_LAYERS, SPRITES } from "../config";
+import { GAME_CONFIG, STAR_LAYERS, SPRITES, EFFECT_COLORS } from "../config";
 import { hexToRgb } from "../geometry";
 
 // ========== Entity Creation ==========
@@ -248,7 +248,7 @@ export function createExplosionParticles(
       vy: 0,
       life: 80,
       maxLife: 80,
-      color: "#ffffff",
+      color: EFFECT_COLORS.white,
       size: flashRadius,
       type: "flash",
     });

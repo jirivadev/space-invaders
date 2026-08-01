@@ -220,6 +220,47 @@ export const COLORS = {
 } as const satisfies Colors;
 
 /**
+ * Effect color palette interface for transient visual effects
+ * (impacts, flashes, glows, and UI accents not tied to entity colors)
+ */
+export interface EffectColors {
+  readonly white: string;
+  readonly ground: string;
+  readonly thrust: string;
+  readonly rapidFire: string;
+  readonly shieldAura: string;
+  readonly bomb: string;
+  readonly impactAlien: string;
+  readonly impactShield: string;
+  readonly impactShieldAbsorb: string;
+  readonly impactPlayer: string;
+  readonly playerExplosion: string;
+  readonly leaderboardBronze: string;
+  readonly playerBulletGlow: string;
+  readonly alienBulletGlow: string;
+}
+
+/**
+ * Effect colors — transient visuals (impacts, flashes, glows, UI accents)
+ */
+export const EFFECT_COLORS = {
+  white: "#ffffff",
+  ground: "#334155",
+  thrust: "#f97316",
+  rapidFire: "#f97316",
+  shieldAura: "#3b82f6",
+  bomb: "#ef4444",
+  impactAlien: "#fef08a",
+  impactShield: "#86efac",
+  impactShieldAbsorb: "#93c5fd",
+  impactPlayer: "#fca5a5",
+  playerExplosion: "#67e8f9",
+  leaderboardBronze: "#d97706",
+  playerBulletGlow: "rgba(250, 204, 21, ",
+  alienBulletGlow: "rgba(248, 113, 113, ",
+} as const satisfies EffectColors;
+
+/**
  * Star layer configurations
  */
 export const STAR_LAYERS = [

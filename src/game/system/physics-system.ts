@@ -76,6 +76,7 @@ export class PhysicsSystem {
   updateBullets(g: GameState, moveScale: number): void {
     for (let i = g.bullets.length - 1; i >= 0; i--) {
       const b = g.bullets[i];
+      b.previousY = b.y;
       b.trail.push({ x: b.x, y: b.y });
       b.y += b.dy * moveScale;
       const maxTrail = b.owner === "player" ? 7 : 4;
@@ -96,6 +97,7 @@ export class PhysicsSystem {
     g.bullets.push({
       x: playerBulletX,
       y: playerBulletY,
+      previousY: playerBulletY,
       w: GAME_CONFIG.bullet.playerWidth,
       h: GAME_CONFIG.bullet.playerHeight,
       dy: GAME_CONFIG.bullet.playerSpeed,
@@ -141,10 +143,10 @@ export class PhysicsSystem {
   }
 
   // Alien shield damage logic
-  damageShieldsWithAliens(g: GameState): void {
+  damageShieldsWithAliens(g: GameState, now: number): void {
     for (const a of g.aliveAliens) {
       if (a.y + a.h >= GAME_CONFIG.canvas.groundY) {
-        setGameOver(g);
+        setGameOver(g, now);
         break;
       }
       for (const s of g.shields) {

@@ -1,5 +1,5 @@
 import type { GameState } from "../types";
-import { GAME_CONFIG, COLORS } from "../config";
+import { GAME_CONFIG, COLORS, EFFECT_COLORS } from "../config";
 import { createExplosionParticles, createImpactFlash } from "./entity-factory";
 import { setGameOver } from "./state-manager";
 
@@ -58,7 +58,7 @@ function processPlayerDeath(g: GameState, now: number): void {
     ...createExplosionParticles(
       g.player.x + g.player.w / 2,
       g.player.y + g.player.h / 2,
-      "#67e8f9",
+      EFFECT_COLORS.playerExplosion,
       50
     )
   );
@@ -66,10 +66,10 @@ function processPlayerDeath(g: GameState, now: number): void {
     createImpactFlash(
       g.player.x + g.player.w / 2,
       g.player.y + g.player.h / 2,
-      "#fca5a5",
+      EFFECT_COLORS.impactPlayer,
       14
     )
   );
   g.player.diedAt = 0;
-  setGameOver(g);
+  setGameOver(g, now);
 }

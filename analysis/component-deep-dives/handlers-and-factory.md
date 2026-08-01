@@ -2,15 +2,15 @@
 
 Component deep-dive: bullet-collision-handler.ts, death-animation-handler.ts, entity-factory.ts (src/game/system/).
 
-## bullet-collision-handler.ts (148 lines)
+## bullet-collision-handler.ts (151 lines)
 
 **Purpose:** Orchestrates the frame's bullet-vs-world collisions. Free function `handleBulletCollisions` that iterates bullets in reverse and dispatches to owner-specific helpers, mutating `GameState` directly.
 
 **Key methods**
 
-- `handleBulletCollisions(g, { collisionSystem, physicsSystem })` (bullet-collision-handler.ts:19) — reverse loop over `g.bullets`; player-owned bullets → `handlePlayerBulletCollisions`, alien-owned → `handleAlienBulletCollision` (bullet-collision-handler.ts:26-42). A truthy return means the bullet was consumed and the loop `continue`s.
+- `handleBulletCollisions(g, { collisionSystem, physicsSystem }, now)` (bullet-collision-handler.ts:19) — reverse loop over `g.bullets`; player-owned bullets → `handlePlayerBulletCollisions`, alien-owned → `handleAlienBulletCollision` (bullet-collision-handler.ts:26-42). A truthy return means the bullet was consumed and the loop `continue`s.
 - `handlePlayerBulletCollisions` (bullet-collision-handler.ts:46) — priority order **shield → alien → UFO**:
-  1. **Shield:** `checkPlayerBulletShield`; shake(2, 65); `swapRemove`; then the `if (!g.bullets[i]) return true` guard (bullet-collision-handler.ts:61) — catches the case where the removed bullet was the last array element (swapRemove shortens the array), preventing stale-index access.
+  1. **Shield:** `checkPlayerBulletShield`; shake(2, 65); `swapRemove`; return immediately, preventing the removed bullet reference from reaching later collision checks.
   2. **Alien:** `checkBulletAlienCollision`; shake(4, 130); yellow impact flash `#fef08a`; remove bullet; return.
   3. **UFO:** `checkBulletUFOCollision`; remove bullet; return.
      Returns false when no hit — bullet survives to the next frame.
@@ -18,13 +18,13 @@ Component deep-dive: bullet-collision-handler.ts, death-animation-handler.ts, en
 
 **Logic notes / edge cases**
 
-- Bullet removal always uses `swapRemove`, which can pull an unprocessed (earlier-index) bullet into slot `i`; the guard + reverse iteration make this safe — a swapped-in bullet was already processed this frame.
+- Bullet removal uses `swapRemove` and returns immediately after a hit; reverse iteration keeps the remaining bullets safe to process.
 - Player bullets are removed by the first matching target in priority order; a bullet that hits a shield never also damages the alien behind it.
 - Invulnerability is checked inside `checkBulletPlayerCollision`, so alien bullets pass through harmlessly during the 2s post-hit window (but shield particles still spawn only on real hits).
 
-**Test coverage:** **No dedicated test file.** The behaviors are exercised only indirectly via `engine.test.ts` smoke tests and the `CollisionSystem` unit tests. The shield-power-up absorb branch, the lives→death deferral, and the swapRemove guard have no direct tests.
+**Test coverage:** `bullet-collision-handler.test.ts` and `death-animation-handler.test.ts` now directly cover shield absorption, lives/death deferral, collision priority, deferred scoring, and the `swapRemove` regression. Rendering handlers remain covered indirectly.
 
-**Observations:** Clear priority structure, but several hardcoded hex colors (bullet-collision-handler.ts:71, 104, 112, 141) instead of `COLORS` — minor drift risk. The `if (!g.bullets[i]) return true` idiom is subtle and would benefit from a comment. This is the highest-risk untested file in the collision pipeline.
+**Observations:** Clear priority structure. Effect colors are centralized in `EFFECT_COLORS`, and the collision paths have focused regression coverage.
 
 ## death-animation-handler.ts (75 lines)
 
@@ -32,10 +32,10 @@ Component deep-dive: bullet-collision-handler.ts, death-animation-handler.ts, en
 
 **Key methods**
 
-- `processDeathAnimations(g, now)` (death-animation-handler.ts:11) — runs three sub-processors with `now` = `performance.now()` passed from the engine.
+- `processDeathAnimations(g, now)` (death-animation-handler.ts:11) — runs three sub-processors with the per-frame `now` passed from the engine.
 - `processDyingAliens` (death-animation-handler.ts:17) — for each alien with `dyingAt > 0` and elapsed ≥ `death.alienDuration` (150ms): **awards `pendingScore` now** (set earlier by the collision system), marks `alive = false`, resets `dyingAt = 0`, spawns 40 colored explosion particles. Reverse iteration + `alive=false` (not removal) keeps array indices stable.
 - `processDyingUFO` (death-animation-handler.ts:38) — after 150ms: 40-particle explosion in `COLORS.ufo`, `ufo = null`.
-- `processPlayerDeath` (death-animation-handler.ts:53) — after 300ms: 50-particle cyan explosion + red impact flash, `diedAt = 0`, then `setGameOver(g)` (which routes to `nameEntry` on a new high score).
+- `processPlayerDeath` (death-animation-handler.ts:53) — after 300ms: 50-particle cyan explosion + red impact flash, `diedAt = 0`, then `setGameOver(g, now)` (which routes to `nameEntry` on a new high score).
 
 **Logic notes / edge cases**
 
@@ -43,9 +43,9 @@ Component deep-dive: bullet-collision-handler.ts, death-animation-handler.ts, en
 - `setGameOver` is guarded (`status !== "playing"` returns), so overlapping death signals (alien reaches ground + player dies same frame) cannot double-transition.
 - Dying aliens remain in `g.aliens` with `alive === true` until expiry; the rendering system shows them as white shrinking flashes via `computeDeathAnimation` (rendering-system.ts:111-129), and the caches exclude them via `dyingAt === 0` checks (state-manager.ts:116).
 
-**Test coverage:** **No dedicated test file.** `pendingScore` timing, explosion counts, and the player-death → `setGameOver` transition are only covered transitively by engine-level smoke tests.
+**Test coverage:** `death-animation-handler.test.ts` directly covers pending-score timing, explosion counts, and the player-death → `setGameOver` transition.
 
-**Observations:** Compact and correct. `now` as a parameter (rather than reading `performance.now()` internally) is test-friendly, but no tests exploit it yet. The "explosion then setGameOver" sequencing means the game-over screen appears the same frame the player explosion spawns — visually the explosion can be hidden by the overlay fade-in (acceptable, arguably intended).
+**Observations:** Compact and correct. `now` is injected rather than read internally, making timing deterministic in tests. The "explosion then setGameOver" sequencing means the game-over screen appears the same frame the player explosion spawns — visually the explosion can be hidden by the overlay fade-in (acceptable, arguably intended).
 
 ## entity-factory.ts (313 lines)
 

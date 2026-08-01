@@ -35,6 +35,7 @@ function makeMockStorage() {
 
 describe("state-manager", () => {
   let mock: ReturnType<typeof makeMockStorage>;
+  const NOW = 1000;
 
   beforeEach(() => {
     resetHighScoreCache();
@@ -49,14 +50,14 @@ describe("state-manager", () => {
   describe("setGameOver", () => {
     it('transitions to "gameover" when score <= highScore', () => {
       const g = createMockState({ score: 100, highScore: 200 });
-      setGameOver(g);
+      setGameOver(g, NOW);
       expect(g.status).toBe("gameover");
       expect(g.highScore).toBe(200);
     });
 
     it('saves new high score and transitions to "nameEntry" when score > highScore', () => {
       const g = createMockState({ score: 500, highScore: 200 });
-      setGameOver(g);
+      setGameOver(g, NOW);
       expect(g.status).toBe("nameEntry");
       expect(g.highScore).toBe(500);
       expect(g.pendingName).toBe("");
@@ -65,7 +66,7 @@ describe("state-manager", () => {
 
     it("persists high score to localStorage on new-high-score path", () => {
       const g = createMockState({ score: 999, highScore: 0 });
-      setGameOver(g);
+      setGameOver(g, NOW);
       expect(mock.store[HIGH_SCORE_KEY]).toBe("999");
     });
 
@@ -75,7 +76,7 @@ describe("state-manager", () => {
         score: 1000,
         highScore: 0,
       });
-      setGameOver(g);
+      setGameOver(g, NOW);
       expect(g.status).toBe("gameover");
       expect(g.highScore).toBe(0);
       expect(mock.store[HIGH_SCORE_KEY]).toBeUndefined();
@@ -87,7 +88,7 @@ describe("state-manager", () => {
         score: 1000,
         highScore: 0,
       });
-      setGameOver(g);
+      setGameOver(g, NOW);
       expect(g.status).toBe("nameEntry");
       expect(g.highScore).toBe(0);
       expect(mock.store[HIGH_SCORE_KEY]).toBeUndefined();
@@ -95,7 +96,7 @@ describe("state-manager", () => {
 
     it("skips save when saveHighScore=false but still transitions", () => {
       const g = createMockState({ score: 500, highScore: 200 });
-      setGameOver(g, false);
+      setGameOver(g, NOW, false);
       expect(g.status).toBe("gameover");
       expect(g.highScore).toBe(200);
       expect(mock.store[HIGH_SCORE_KEY]).toBeUndefined();
@@ -109,7 +110,7 @@ describe("state-manager", () => {
         },
       });
       const g = createMockState({ score: 500, highScore: 200 });
-      expect(() => setGameOver(g)).not.toThrow();
+      expect(() => setGameOver(g, NOW)).not.toThrow();
       // status still transitions to nameEntry even though the save failed
       expect(g.status).toBe("nameEntry");
     });
@@ -121,44 +122,44 @@ describe("state-manager", () => {
         { name: "AAA", score: 100, date: 1 },
         { name: "BBB", score: 50, date: 2 },
       ]);
-      const g = createInitialState();
+      const g = createInitialState(0, 3, "menu", NOW);
       expect(g.leaderboardCache).toHaveLength(2);
       expect(g.leaderboardCache[0].name).toBe("AAA");
     });
 
     it("reads high score from localStorage", () => {
       mock.store[HIGH_SCORE_KEY] = "7777";
-      const g = createInitialState();
+      const g = createInitialState(0, 3, "menu", NOW);
       expect(g.highScore).toBe(7777);
     });
 
     it("falls back to 0 when localStorage value is not a finite number", () => {
       mock.store[HIGH_SCORE_KEY] = "not-a-number";
-      const g = createInitialState();
+      const g = createInitialState(0, 3, "menu", NOW);
       expect(g.highScore).toBe(0);
     });
 
     it("applies passed score, lives, and status", () => {
-      const g = createInitialState(123, 2, "gameover");
+      const g = createInitialState(123, 2, "gameover", NOW);
       expect(g.score).toBe(123);
       expect(g.lives).toBe(2);
       expect(g.status).toBe("gameover");
     });
 
     it("uses default values when no arguments provided", () => {
-      const g = createInitialState();
+      const g = createInitialState(0, 3, "menu", NOW);
       expect(g.score).toBe(0);
       expect(g.lives).toBe(3);
       expect(g.status).toBe("menu");
     });
 
     it("initializes GameState.initialized to false", () => {
-      const g = createInitialState();
+      const g = createInitialState(0, 3, "menu", NOW);
       expect(g.initialized).toBe(false);
     });
 
     it("creates 4 shields at SHIELD_POSITIONS", () => {
-      const g = createInitialState();
+      const g = createInitialState(0, 3, "menu", NOW);
       expect(g.shields).toHaveLength(4);
     });
   });
@@ -179,7 +180,7 @@ describe("state-manager", () => {
         ufo: { x: 0, y: 0, w: 48, h: 24, dx: 2.5, dyingAt: 0 },
         levelAnnounceTimer: 500,
       });
-      setMenu(g);
+      setMenu(g, NOW);
       expect(g.status).toBe("menu");
       expect(g.ufo).toBeNull();
       expect(g.levelAnnounceTimer).toBe(0);
@@ -193,7 +194,16 @@ describe("state-manager", () => {
         lives: 1,
         level: 5,
         bullets: [
-          { x: 0, y: 0, w: 4, h: 12, dy: -9, owner: "player", trail: [] },
+          {
+            x: 0,
+            y: 0,
+            previousY: 0,
+            w: 4,
+            h: 12,
+            dy: -9,
+            owner: "player",
+            trail: [],
+          },
         ],
         particles: [
           {

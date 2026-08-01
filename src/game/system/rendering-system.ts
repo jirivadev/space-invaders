@@ -1,6 +1,7 @@
 import {
   GAME_CONFIG,
   COLORS,
+  EFFECT_COLORS,
   STAR_LAYERS,
   SPRITES,
   SPRITES_2,
@@ -29,9 +30,9 @@ import {
 
 const POWER_UP_VISUALS: Record<PowerUpType, { color: string; label: string }> =
   {
-    rapidFire: { color: "#f97316", label: "R" },
-    shield: { color: "#3b82f6", label: "S" },
-    bomb: { color: "#ef4444", label: "B" },
+    rapidFire: { color: EFFECT_COLORS.rapidFire, label: "R" },
+    shield: { color: EFFECT_COLORS.shieldAura, label: "S" },
+    bomb: { color: EFFECT_COLORS.bomb, label: "B" },
   };
 
 export class RenderingSystem {
@@ -82,7 +83,7 @@ export class RenderingSystem {
 
   // Draw ground line
   drawGround(ctx: CanvasRenderingContext2D): void {
-    ctx.strokeStyle = "#334155";
+    ctx.strokeStyle = EFFECT_COLORS.ground;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, GAME_CONFIG.canvas.groundY);
@@ -116,7 +117,7 @@ export class RenderingSystem {
       if (deathAnim) {
         if (deathAnim.isComplete) continue; // will be removed in update
         ctx.globalAlpha = deathAnim.flashAlpha;
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = EFFECT_COLORS.white;
         const flashW = a.w * deathAnim.flashScale;
         const flashH = a.h * deathAnim.flashScale;
         ctx.fillRect(
@@ -148,7 +149,7 @@ export class RenderingSystem {
     if (deathAnim) {
       if (deathAnim.isComplete) return;
       ctx.globalAlpha = deathAnim.flashAlpha;
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = EFFECT_COLORS.white;
       const flashW = ufo.w * deathAnim.flashScale;
       const flashH = ufo.h * deathAnim.flashScale;
       ctx.fillRect(
@@ -237,7 +238,7 @@ export class RenderingSystem {
       centerX - thrustW / 2,
       player.y + player.h,
       thrustScale,
-      "#f97316"
+      EFFECT_COLORS.thrust
     );
 
     // Shield aura — shimmering energy ring with 6 dots
@@ -252,7 +253,7 @@ export class RenderingSystem {
       );
       for (const dot of dots) {
         ctx.globalAlpha = dot.alpha;
-        ctx.fillStyle = "#3b82f6";
+        ctx.fillStyle = EFFECT_COLORS.shieldAura;
         ctx.beginPath();
         ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
         ctx.fill();
@@ -302,7 +303,7 @@ export class RenderingSystem {
 
       // Type letter inside the sprite
       ctx.save();
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = EFFECT_COLORS.white;
       ctx.font = "bold 10px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -318,7 +319,9 @@ export class RenderingSystem {
       const bulletColor =
         b.owner === "player" ? COLORS.playerBullet : COLORS.alienBullet;
       const glowColor =
-        b.owner === "player" ? "rgba(250, 204, 21, " : "rgba(248, 113, 113, ";
+        b.owner === "player"
+          ? EFFECT_COLORS.playerBulletGlow
+          : EFFECT_COLORS.alienBulletGlow;
 
       // Draw trail
       const trailEntries = computeBulletTrailEntries(b.trail, b.w, b.h);
@@ -343,7 +346,7 @@ export class RenderingSystem {
 
       // Draw highlight
       ctx.globalAlpha = 0.7;
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = EFFECT_COLORS.white;
       ctx.fillRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
       ctx.globalAlpha = 1;
     }
@@ -358,12 +361,12 @@ export class RenderingSystem {
 
       if (p.type === "flash") {
         const flashSize = p.size * (0.5 + 0.5 * alpha);
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = EFFECT_COLORS.white;
         ctx.beginPath();
         ctx.arc(p.x, p.y, flashSize, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = alpha * 0.6;
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = EFFECT_COLORS.white;
         ctx.beginPath();
         ctx.arc(p.x, p.y, flashSize * 0.4, 0, Math.PI * 2);
         ctx.fill();
@@ -379,7 +382,7 @@ export class RenderingSystem {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = alpha * 0.5;
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = EFFECT_COLORS.white;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
         ctx.fill();

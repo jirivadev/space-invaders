@@ -36,8 +36,8 @@
 ## Verification Baseline (must stay true)
 
 - ✅ `npm run build` — typecheck (tsc) + Vite bundle succeeds
-- ✅ `npm test` — **209 tests / 8 files, all passing**
-- ✅ Test files: `rendering-math.test.ts` (55), `physics-system.test.ts` (33), `entity-factory.test.ts` (26), `input-handler.test.ts` (23), `engine.test.ts` (21), `collision-system.test.ts` (19), `state-manager.test.ts` (18), `level-system.test.ts` (14)
+- ✅ `npm test` — **244 tests / 13 files, all passing**
+- ✅ Test files: `rendering-math.test.ts` (55), `physics-system.test.ts` (33), `entity-factory.test.ts` (26), `input-handler.test.ts` (23), `engine.test.ts` (22), `collision-system.test.ts` (19), `state-manager.test.ts` (18), `level-system.test.ts` (15), `bullet-collision-handler.test.ts` (11), `death-animation-handler.test.ts` (10)
 
 ## Completed Phases
 
@@ -47,13 +47,13 @@
 
 1. `analysis/comprehensive-codebase-guide.md` — system overview + ASCII diagram, end-to-end game flow, module reference table, GameState field reference, 19-step frame pipeline, collision & death pipeline, GAME_CONFIG tuning guide, persistence internals, known issues
 2. `analysis/developer-onboarding-guide.md` — setup, mental model, "I want to change X → edit Y" map, feature-add recipe, levels/formations guide, testing conventions, gotchas, debugging tips, quality bar
-3. `analysis/technical-recommendations.md` — prioritized roadmap R-1..R-10 (quick wins: R-1 level-clear score fix, R-2 stale bullet fix, R-3 dep cleanup; Tier 2: tunneling/pre-commit gate/tests/now-threading; Tier 3: HUD decision/colors/vitest config) + "what NOT to do"
+3. `analysis/technical-recommendations.md` — prioritized roadmap R-1..R-10, with R-1 through R-6 status updated after implementation + "what NOT to do"
 
 **Analysis complete — all 3 phases done.**
 
 - Final deliverables: 8 docs in `analysis/` + 4 in `analysis/component-deep-dives/`
-- 2 real bugs identified (T-1 every-level score loss, T-2 stale bullet ref), with recommended fixes + regression test specs
-- Baseline: 209 tests passing, build clean
+- 2 real bugs identified and resolved (T-1 every-level score loss, T-2 stale bullet ref), with regression coverage
+- Baseline: 244 tests passing, build clean
 
 ### ✅ Phase 2: Component Analysis — COMPLETE
 
@@ -63,15 +63,15 @@
 2. `analysis/component-deep-dives/` — 4 files (engine-and-state.md, gameplay-systems.md, handlers-and-factory.md, rendering-and-support.md) written by @igris, line-verified, test counts confirmed
 3. `analysis/technical-issues.md` — 10 issues with severity + fixes
 
-**Key findings (T-1 and T-2 are REAL BUGS):**
+**Key findings and current status:**
 
-- 🔴 **T-1 Level-clear score loss (every level)**: `checkLevelComplete` (engine.ts:170) runs BEFORE `handleBulletCollisions` (186); last alien's `pendingScore` is deferred 150ms via death pipeline; end-of-frame `refreshAlienCaches` drops dying alien; next frame `checkLevelComplete` replaces `g.aliens`, discarding the pending score + explosion. Final kill of every level = 0 points.
-- 🔴 **T-2 Stale bullet ref**: `if (!g.bullets[i]) return true` checks position not identity — after shield hit at non-last index, stale bullet can phantom-kill descended aliens or wrongly swapRemove an already-processed bullet.
-- 🟠 T-3 bullet tunneling at low FPS (maxDt=100ms → 54px step vs 24px alien hitbox)
-- 🟡 T-4 HUD canvas+DOM duplication; T-5 7 unused deps (@modelcontextprotocol/*, zod, glob, minimatch, diff, brace-expansion); T-6 AGENTS.md claims pre-commit tests but no .husky/ exists (only prettier in .lintstagedrc)
-- ⚪ T-7/T-8/T-9/T-10: perf.now inconsistency, untested modules, inline colors, no vitest config
+- ✅ **T-1/T-2 resolved**: level completion waits for death animations, and shield-hit bullets return immediately after removal.
+- ✅ T-3 bullet tunneling resolved with swept collision using each bullet's previous and current positions.
+- ✅ T-4/T-5/T-6 resolved: the duplicate DOM HUD was removed, dependencies were cleaned up, and the pre-commit test gate is documented.
+- ✅ T-7/T-9 resolved: per-frame `now` is threaded through gameplay paths and inline effect colors use `EFFECT_COLORS`.
+- ✅ T-8 rendering-system, ui-rendering, and supporting component tests added; ✅ T-10 explicit Vitest config added.
 - **Verified healthy**: StrictMode double-mount OK (no leaks), high-score cache OK, keys map bounded, localStorage fully guarded, zero TODO/debug leftovers, no backup files, dist gitignored
-- Test coverage gap: bullet-collision-handler, death-animation-handler, rendering-system, ui-rendering have no direct tests
+- Test coverage now includes rendering-system, ui-rendering, and supporting components; collision and death handlers also have focused tests
 
 ### ✅ Phase 1: Discovery & Architecture — COMPLETE
 
@@ -93,11 +93,11 @@
 
 **Potential concerns flagged (Phase 2 candidates):**
 
-1. Canvas HUD (`ui-rendering.drawHUD`) **duplicated** by React DOM HUD (`HUD.tsx`)
+1. Canvas HUD (`ui-rendering.drawHUD`) is the single source of truth; the duplicate React DOM HUD was removed (T-4 resolved)
 2. React StrictMode double-mount — engine create/destroy twice in dev (works, verify no leaks)
-3. Unused legacy deps in `package.json`: `@modelcontextprotocol/*`, `brace-expansion`, `diff`, `glob`, `minimatch`, `zod` (not imported by `src/`)
-4. `performance.now()` called directly in collision-system (engine passes `now` elsewhere — inconsistent)
-5. No `dt` substeps for collision — potential bullet tunneling (mitigated by `maxDt` clamp)
+3. Unused legacy runtime dependencies were removed from `package.json` (T-5 resolved)
+4. The engine's frame timestamp is threaded through collision and state-transition paths (T-7 resolved)
+5. Bullet collision uses a swept vertical path to prevent tunneling across delayed frames (T-3 resolved)
 
 ## File Locations
 
@@ -106,7 +106,7 @@ analysis/
 ├── project-overview.md          # ✅ Phase 1
 ├── architecture-analysis.md     # ✅ Phase 1
 ├── code-patterns-identified.md  # ✅ Phase 2
-├── technical-issues.md          # ✅ Phase 2 (10 issues, T-1/T-2 = real bugs)
+├── technical-issues.md          # ✅ Phase 2 (10 issues, status updated after fixes)
 ├── component-deep-dives/        # ✅ Phase 2
 │   ├── engine-and-state.md
 │   ├── gameplay-systems.md
@@ -124,18 +124,13 @@ Related (pre-existing, do NOT confuse):
 
 ### ✅ Analysis complete — all 3 phases delivered.
 
-**Suggested follow-ups (ask user which to take on):**
+**Current follow-ups:**
 
-1. **Implement bug fixes**: R-1 (level-clear score, engine.ts reorder or pendingScore sweep) + R-2 (stale bullet, return-true fix) with regression tests
-2. **Dependency cleanup**: R-3 (remove 7 unused deps, move @types/node to devDeps)
-3. **Tooling**: R-5 (restore pre-commit gate: husky + lint-staged tests) — makes AGENTS.md truthful
-4. **Test coverage**: R-6 (bullet-collision-handler + death-animation-handler tests)
-5. **Robustness**: R-4 (maxDt 100→50 or collision substepping)
-6. If the codebase changes significantly, re-run analysis: read this file for methodology + baseline
+1. If the codebase changes significantly, re-run analysis: read this file for methodology + baseline.
 
 ## Session State
 
-- **Last updated**: 2026-07-31
+- **Last updated**: 2026-08-01
 - **Current phase**: 3 (complete) — **ALL PHASES DONE**
 - **Files analyzed**: all source + test + config files (read in full across sessions)
 - **Agents used**: @beru (fact/hygiene sweep), @bellion (7 deep concern analyses), @igris (component deep-dives), @shadow-sovereign available for fix review

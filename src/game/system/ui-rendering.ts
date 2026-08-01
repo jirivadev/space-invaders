@@ -1,4 +1,4 @@
-import { GAME_CONFIG, COLORS, SPRITES } from "../config";
+import { GAME_CONFIG, COLORS, EFFECT_COLORS, SPRITES } from "../config";
 import type { LeaderboardEntry } from "../types";
 import { drawSprite } from "../renderer-utils";
 import {
@@ -71,7 +71,7 @@ export class UIRenderingSystem {
     const titleY = 120;
 
     // Base title
-    ctx.fillStyle = "#4ade80";
+    ctx.fillStyle = COLORS.player;
     ctx.fillText(titleText, centerX, titleY);
 
     // Shimmer highlight — diagonal translucent band sweeping across the text
@@ -106,7 +106,7 @@ export class UIRenderingSystem {
 
     // Thrust flicker
     if (computeThrustFlicker(now)) {
-      ctx.fillStyle = "#facc15";
+      ctx.fillStyle = COLORS.playerBullet;
       ctx.fillRect(centerX - 3, playerDrawY + playerH, 6, 4);
     }
 
@@ -132,11 +132,11 @@ export class UIRenderingSystem {
       for (let i = 0; i < leaderboard.length; i++) {
         ctx.fillStyle =
           i === 0
-            ? "#facc15"
+            ? COLORS.playerBullet
             : i === 1
-              ? "#94a3b8"
+              ? COLORS.star
               : i === 2
-                ? "#d97706"
+                ? EFFECT_COLORS.leaderboardBronze
                 : COLORS.text;
         ctx.fillText(
           `${(i + 1).toString().padStart(2, " ")}. ${leaderboard[i].name.padEnd(maxLen)}  ${formatPaddedScore(leaderboard[i].score, 6)}`,
@@ -244,7 +244,7 @@ export class UIRenderingSystem {
     ctx.globalAlpha = 1;
 
     ctx.font = "14px monospace";
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = COLORS.star;
     ctx.fillText(
       "Press ENTER to save   BACKSPACE to delete",
       GAME_CONFIG.canvas.width / 2,

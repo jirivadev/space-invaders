@@ -7,7 +7,7 @@ import type {
   PowerUp,
   UFO,
 } from "../types";
-import { COLORS, ALIEN_POINTS, GAME_CONFIG } from "../config";
+import { COLORS, EFFECT_COLORS, ALIEN_POINTS, GAME_CONFIG } from "../config";
 import { rectsOverlap } from "../geometry";
 import {
   createExplosionParticles,
@@ -15,21 +15,39 @@ import {
   damageShieldRect,
 } from "./entity-factory";
 
+function getSweptBulletRect(bullet: Bullet): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  const previousY = Number.isFinite(bullet.previousY)
+    ? bullet.previousY
+    : bullet.y;
+  return {
+    x: bullet.x,
+    y: Math.min(previousY, bullet.y),
+    w: bullet.w,
+    h: bullet.h + Math.abs(bullet.y - previousY),
+  };
+}
+
 export class CollisionSystem {
   checkBulletPlayerCollision(bullet: Bullet, player: Player): boolean {
     if (player.invulnerable > 0) return false;
-    return rectsOverlap(bullet, player);
+    return rectsOverlap(getSweptBulletRect(bullet), player);
   }
 
   checkBulletAlienCollision(
     bullet: Bullet,
     alien: Alien,
-    state: GameState
+    state: GameState,
+    now: number
   ): boolean {
     if (!alien.alive || alien.dyingAt > 0) return false;
-    if (!rectsOverlap(bullet, alien)) return false;
+    if (!rectsOverlap(getSweptBulletRect(bullet), alien)) return false;
 
-    alien.dyingAt = performance.now();
+    alien.dyingAt = now;
     alien.pendingScore = ALIEN_POINTS[alien.type];
 
     // Chance to spawn power-up
@@ -43,22 +61,27 @@ export class CollisionSystem {
         h: 20,
         dy: GAME_CONFIG.powerUp.fallSpeed,
         type,
-        spawnedAt: performance.now(),
+        spawnedAt: now,
       });
     }
     return true;
   }
 
-  checkBulletUFOCollision(bullet: Bullet, ufo: UFO, state: GameState): boolean {
+  checkBulletUFOCollision(
+    bullet: Bullet,
+    ufo: UFO,
+    state: GameState,
+    now: number
+  ): boolean {
     if (!ufo || ufo.dyingAt > 0) return false;
-    if (!rectsOverlap(bullet, ufo)) return false;
+    if (!rectsOverlap(getSweptBulletRect(bullet), ufo)) return false;
 
     const points =
       GAME_CONFIG.ufo.points[
         Math.floor(Math.random() * GAME_CONFIG.ufo.points.length)
       ];
     state.score += points;
-    ufo.dyingAt = performance.now();
+    ufo.dyingAt = now;
     state.powerUps = []; // Clear power-ups for UFO kill
     return true;
   }
@@ -74,7 +97,7 @@ export class CollisionSystem {
       w: shield.cols * shield.pixelSize,
       h: shield.rows * shield.pixelSize,
     };
-    if (!rectsOverlap(bullet, shieldRect)) return false;
+    if (!rectsOverlap(getSweptBulletRect(bullet), shieldRect)) return false;
 
     damageShieldRect(shield, bullet.x, bullet.y, bullet.w, bullet.h);
 
@@ -91,7 +114,7 @@ export class CollisionSystem {
         createImpactFlash(
           bullet.x + bullet.w / 2,
           bullet.y + bullet.h / 2,
-          "#86efac",
+          EFFECT_COLORS.impactShield,
           10
         )
       );

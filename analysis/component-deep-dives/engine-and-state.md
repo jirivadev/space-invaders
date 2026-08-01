@@ -49,7 +49,7 @@ Component deep-dive: `GameEngine` (src/game/engine.ts) and `state-manager.ts` (s
 
 **Key functions**
 
-- `createInitialState(score=0, lives=3, status="menu")` (state-manager.ts:47) — builds the full state: level-1 aliens from `getLevelConfig(1)`, 4 shields at `SHIELD_POSITIONS`, centered player, `leaderboardCache` from `getLeaderboard()`, `screenOpenedAt = performance.now()`.
+- `createInitialState(score=0, lives=3, status="menu", now)` (state-manager.ts:47) — builds the full state: level-1 aliens from `getLevelConfig(1)`, 4 shields at `SHIELD_POSITIONS`, centered player, `leaderboardCache` from `getLeaderboard()`, and `screenOpenedAt = now`.
 - `resetGameState(g)` (state-manager.ts:8) — resets mutable gameplay fields for a fresh run (score/lives/level/shields/bullets/particles/power-ups/player timers/alien movement); keeps high score and the player object identity.
 - `setPlaying` (state-manager.ts:103) / `setMenu` (state-manager.ts:108) — status flips; `setMenu` also nulls the UFO and stamps `screenOpenedAt` (drives fade-in animations).
 - `refreshAlienCaches(g)` (state-manager.ts:115) — `aliveAliens = alive && dyingAt === 0`; `activeAliens = alive`. Callers must remember to invoke after any kill/respawn (engine calls it twice per frame).
@@ -59,7 +59,7 @@ Component deep-dive: `GameEngine` (src/game/engine.ts) and `state-manager.ts` (s
 
 ## Test coverage
 
-- `engine.test.ts` — **21 tests** (all pass). Includes geometry + leaderboard describes (see rendering-and-support.md). Smoke tests: construction (engine.test.ts:313), start/stop (317), `onUIChange` firing after menu→playing transition (325), `setStatus`/`submitLeaderboard` wire-through (355/370), `levelAnnounceTimer` decrement/expiry (387/405), state-transition reachability (423).
+- `engine.test.ts` — **22 tests** (all pass). Includes geometry + leaderboard describes (see rendering-and-support.md). Smoke tests: construction (engine.test.ts:313), start/stop (317), `onUIChange` firing after menu→playing transition (325), `setStatus`/`submitLeaderboard` wire-through (355/370), `levelAnnounceTimer` decrement/expiry (387/405), state-transition reachability (423).
 - `state-manager.test.ts` — **18 tests**: `setGameOver` branches incl. no-op guards on `gameover`/`nameEntry` (50-104), high-score persistence + quota-failure tolerance (66/104), `createInitialState` defaults/shields/leaderboardCache (118-160), `resetGameState` keeps high score (235).
 
 ## Observations

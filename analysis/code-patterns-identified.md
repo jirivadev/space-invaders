@@ -46,7 +46,7 @@ Recurring conventions across the codebase. New code should follow these patterns
 
 ## 7. Deferred Death Effects (Timestamp-Based)
 
-- **Pattern**: On hit, entities are marked with `dyingAt = performance.now()` and a `pendingScore`; a death animation plays; the actual score credit + explosion happens later in `processDeathAnimations` after the duration elapses.
+- **Pattern**: On hit, entities are marked with the injected frame timestamp `dyingAt = now` and a `pendingScore`; a death animation plays; the actual score credit + explosion happens later in `processDeathAnimations` after the duration elapses.
 - **Where**: `collision-system.ts` (marks dying), `death-animation-handler.ts` (processes), `rendering-system.ts` (draws shrinking white flash)
 - **Why**: Score lands _after_ the flash — feels intentional rather than instant + inconsistent.
 
@@ -55,7 +55,7 @@ Recurring conventions across the codebase. New code should follow these patterns
 - **Pattern**: `aliveAliens` / `activeAliens` maintained as pre-filtered arrays, rebuilt each frame via `refreshAlienCaches(g)`.
 - **Where**: `state-manager.ts` `refreshAlienCaches`; called at start + end of `engine._update()`
 - **Why**: Avoids repeated `alive && dyingAt === 0` checks in hot loops (movement, shooting, collisions).
-- **Caveat**: Stale between refreshes within a frame (see `technical-issues.md` #3).
+- **Caveat**: Stale between refreshes within a frame; the update pipeline refreshes caches at both gameplay boundaries.
 
 ## 9. `try/catch` Wrapping All Persistence
 
@@ -72,7 +72,7 @@ Recurring conventions across the codebase. New code should follow these patterns
 ## 11. Single-Source Configuration
 
 - **Pattern**: Every tunable value lives in `config.ts` under `GAME_CONFIG` (grouped by concern) or as named constants (`CANVAS_WIDTH`, `COLORS`, `SPRITES`, `STAR_LAYERS`). Systems import config, never hardcode magic numbers.
-- **Exception (known)**: A few one-off hex colors appear inline in rendering code (e.g., `"#334155"` ground line, `"#facc15"` thrust, `"#3b82f6"` shield aura) rather than in `COLORS`.
+- **Effect palette**: Transient visual colors live in `EFFECT_COLORS` alongside entity colors in `COLORS`.
 
 ## 12. Test Utilities as Factories
 

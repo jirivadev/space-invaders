@@ -12,7 +12,7 @@ The app is a **two-layer architecture** split cleanly between React (shell) and 
 │   │                                                                        │
 │   │  <canvas ref>                    onUIChange(ui) → setUi (diffed)      │
 │   ▼                                                                        │
-│   GameEngine (src/game/engine.ts)  ────── callback bridge ──► HUD / PowerUpBanner
+│   GameEngine (src/game/engine.ts)  ────── callback bridge ──► PowerUpBanner
 └────────────────────────────────────────────────────────────────────────────┘
                                     │
                     ┌───────────────┴────────────────┐
@@ -34,7 +34,7 @@ The app is a **two-layer architecture** split cleanly between React (shell) and 
 
 **Per-frame pipeline (`_frame` → `_update` + `_draw`) — fixed system order matters:**
 
-1. **Time management** — `dt` computed from `performance.now()`, clamped to `maxDt` (100 ms); `moveScale = dt / 16.67ms` normalizes movement to 60 FPS
+1. **Time management** — `dt` computed from `performance.now()`, clamped to `maxDt` (50 ms); `moveScale = dt / 16.67ms` normalizes movement to 60 FPS
 2. **Stars update** — parallax starfield scrolls by layer speed
 3. **State transitions** — menu/gameover Space-to-start handlers
 4. **Early return** if status ≠ `"playing"` (gameplay frozen on overlays)
@@ -101,7 +101,7 @@ App.tsx (cleanup)
 
 - React **never touches game state** — it receives derived `UIState` snapshots
 - Engine **never touches the DOM** (except canvas + keyboard listeners) — it sends `onUIChange`
-- HUD data is rendered **twice**: once on canvas (`ui-rendering.drawHUD`) and once in DOM (`HUD.tsx`). The React HUD is decorative duplicates of the canvas HUD.
+- HUD data is rendered by the canvas (`ui-rendering.drawHUD`), which is the single source of truth. React receives `UIState` for the remaining supporting status UI.
 
 ## 7. Persistence
 
@@ -109,7 +109,7 @@ App.tsx (cleanup)
 
 ## 8. Key Design Decisions (from code + git history)
 
-1. **Systems extracted over time**: collision + death logic pulled out of the engine into dedicated files; canvas screens extracted into `UIRenderingSystem`; React HUD split into components (recent refactors)
+1. **Systems extracted over time**: collision + death logic pulled out of the engine into dedicated files; canvas screens and HUD extracted into `UIRenderingSystem`; supporting React status UI remains in components (recent refactors)
 2. **Mutable state over immutability** — explicit, pragmatic choice for a 60 FPS game; avoids GC pressure
 3. **Frame-rate independent physics** via `moveScale` (dt normalization)
 4. **O(1) array removal** via `swapRemove` + reverse iteration — order-unstable but deliberate
@@ -120,9 +120,9 @@ App.tsx (cleanup)
 
 ## 9. Potential Concerns (Phase 2 candidates)
 
-- **Canvas HUD + React HUD duplication** — same stats rendered in two places (divergence risk)
+- **Canvas HUD is the single source of truth** — the former duplicate React stats HUD was removed (T-4 resolved)
 - **React StrictMode double-mount** — effect creates/destroys engine twice in dev; works, but worth confirming no listener leaks
-- **`package.json` legacy deps** — `@modelcontextprotocol/*`, `brace-expansion`, `diff`, `glob`, `minimatch`, `zod` appear unused by `src/` (candidate cleanup)
+- **Dependency hygiene resolved** — unused legacy runtime dependencies were removed; `@types/node` is a dev dependency.
 - **Single `keys` object grows** with any pressed key; cleared on blur (already handled)
-- **`performance.now()` in collision/system code** — engine passes `now` into death handler but collision system calls `performance.now()` directly (minor inconsistency)
+- **Consistent frame timing** — the engine's per-frame `now` is threaded through collision, death, and state-transition paths.
 - **No collision with `dt` substeps** — bullets can tunnel through thin objects at high `dt` (mitigated by `maxDt` clamp)

@@ -20,9 +20,8 @@ describe("handleBulletCollisions", () => {
 
   beforeEach(() => {
     now = 1000;
-    // Deterministic clock: collision-system stamps dyingAt and the player's
-    // diedAt from performance.now(), so pin it for exact assertions.
-    vi.spyOn(performance, "now").mockImplementation(() => now);
+    // Deterministic clock: the engine threads `now` through the collision
+    // path, so tests inject it directly without faking performance.now().
     collisionSystem = new CollisionSystem();
     physicsSystem = new PhysicsSystem();
   });
@@ -56,7 +55,7 @@ describe("handleBulletCollisions", () => {
         shields: [shield],
       });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       // The shield-spent bullet must never reach the alien
       expect(alien.dyingAt).toBe(0);
@@ -73,7 +72,7 @@ describe("handleBulletCollisions", () => {
       const bullet = makeBullet({ x: 130, y: 470, owner: "player" });
       const g = createMockState({ bullets: [bullet], shields: [shield] });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(0);
     });
@@ -84,7 +83,7 @@ describe("handleBulletCollisions", () => {
       const bullet = makeBullet({ x: 700, y: 50, owner: "player" });
       const g = createMockState({ bullets: [bullet] });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(1);
       expect(g.particles).toHaveLength(0);
@@ -97,7 +96,7 @@ describe("handleBulletCollisions", () => {
       vi.spyOn(Math, "random").mockReturnValue(0.5); // no power-up spawn
       const g = createMockState({ bullets: [bullet], aliens: [alien] });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(0);
       expect(alien.dyingAt).toBe(now);
@@ -122,7 +121,7 @@ describe("handleBulletCollisions", () => {
         powerUps: [makePowerUp()],
       });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(0);
       expect(ufo.dyingAt).toBe(now);
@@ -138,7 +137,7 @@ describe("handleBulletCollisions", () => {
       vi.spyOn(Math, "random").mockReturnValue(0.5);
       const g = createMockState({ bullets: [bullet], aliens: [alien], ufo });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(alien.dyingAt).toBe(now);
       expect(ufo.dyingAt).toBe(0); // UFO check never reached
@@ -159,7 +158,7 @@ describe("handleBulletCollisions", () => {
       const bullet = alienBulletAt(0, 0);
       const g = createMockState({ bullets: [bullet] });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(1);
       expect(g.lives).toBe(3);
@@ -171,7 +170,7 @@ describe("handleBulletCollisions", () => {
       const player = makePlayer({ x: 100, y: 500, invulnerable: 500 });
       const g = createMockState({ bullets: [bullet], player });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(1);
       expect(g.lives).toBe(3);
@@ -185,7 +184,7 @@ describe("handleBulletCollisions", () => {
         activePowerUps: { rapidFire: 0, shield: 1000 },
       });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(0);
       expect(g.lives).toBe(3);
@@ -200,7 +199,7 @@ describe("handleBulletCollisions", () => {
       const bullet = alienBulletAt(100, 500);
       const g = createMockState({ lives: 3, bullets: [bullet] });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(0);
       expect(g.lives).toBe(2);
@@ -217,7 +216,7 @@ describe("handleBulletCollisions", () => {
       const bullet = alienBulletAt(100, 500);
       const g = createMockState({ lives: 1, bullets: [bullet] });
 
-      handleBulletCollisions(g, { collisionSystem, physicsSystem });
+      handleBulletCollisions(g, { collisionSystem, physicsSystem }, now);
 
       expect(g.bullets).toHaveLength(0);
       expect(g.lives).toBe(0);

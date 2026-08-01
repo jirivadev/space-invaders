@@ -31,6 +31,7 @@ export interface Alien {
 export interface Bullet {
   x: number;
   y: number;
+  previousY: number;
   w: number;
   h: number;
   dy: number;

@@ -95,6 +95,7 @@ describe("PhysicsSystem", () => {
       const g = createMockState({ bullets: [bullet] });
       system.updateBullets(g, 1);
       expect(g.bullets[0].y).toBe(191); // 200 + (-9) * 1
+      expect(g.bullets[0].previousY).toBe(200);
     });
 
     it("moves alien bullets down by dy * moveScale", () => {
@@ -157,6 +158,7 @@ describe("PhysicsSystem", () => {
       const expectedY = g.player.y - GAME_CONFIG.bullet.playerHeight;
       expect(g.bullets[0].x).toBe(expectedX);
       expect(g.bullets[0].y).toBe(expectedY);
+      expect(g.bullets[0].previousY).toBe(expectedY);
     });
   });
 
@@ -409,7 +411,7 @@ describe("PhysicsSystem", () => {
   describe("damageShieldsWithAliens", () => {
     it("does not throw when no aliens or shields exist", () => {
       const g = createMockState({ aliens: [], shields: [] });
-      expect(() => system.damageShieldsWithAliens(g)).not.toThrow();
+      expect(() => system.damageShieldsWithAliens(g, 1000)).not.toThrow();
     });
   });
 });

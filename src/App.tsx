@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { GameEngine } from "./game/engine";
 import type { UIState } from "./game/types";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "./game/config";
-import HUD from "./components/HUD";
 import PowerUpBanner from "./components/PowerUpBanner";
 import ControlsHint from "./components/ControlsHint";
 
@@ -54,12 +53,6 @@ export default function App() {
           }}
         />
       </div>
-      <HUD
-        score={ui.score}
-        highScore={ui.highScore}
-        level={ui.level}
-        lives={ui.lives}
-      />
       <PowerUpBanner
         rapidFireTime={ui.rapidFireTime}
         shieldTime={ui.shieldTime}

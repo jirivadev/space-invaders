@@ -4,7 +4,7 @@
 
 ## What This Is
 
-A browser-based **Space Invaders clone** — single-page React 19 + TypeScript app where the entire game runs on the **HTML5 Canvas API**. React handles only the page shell and DOM HUD; all gameplay logic, rendering, and screen overlays (menu, game over, name entry) are canvas-drawn.
+A browser-based **Space Invaders clone** — single-page React 19 + TypeScript app where the entire game runs on the **HTML5 Canvas API**. React handles only the page shell and supporting status UI; all gameplay logic, rendering, and screen overlays (menu, game over, name entry) are canvas-drawn.
 
 - **Purpose**: Classic arcade shooter gameplay
 - **Deployment target**: Static single-file HTML (no backend, no API, no build-time assets)
@@ -14,13 +14,13 @@ A browser-based **Space Invaders clone** — single-page React 19 + TypeScript a
 
 | Layer        | Technology                 | Notes                                                                                                    |
 | ------------ | -------------------------- | -------------------------------------------------------------------------------------------------------- |
-| UI framework | **React 19**               | Page shell, HUD, power-up banner, controls hint                                                          |
+| UI framework | **React 19**               | Page shell, power-up banner, controls hint                                                               |
 | Language     | **TypeScript 5.9**         | `strict`, `noUnusedLocals/Parameters`, `verbatimModuleSyntax` (type-only imports must use `import type`) |
 | Build tool   | **Vite 6**                 | `@vitejs/plugin-react`, `@tailwindcss/vite`                                                              |
 | Bundle       | **vite-plugin-singlefile** | Inlines all JS/CSS into one `dist/index.html` (~241 KB, 75 KB gzip)                                      |
 | Styling      | **Tailwind CSS v4**        | CSS-first config (`@import "tailwindcss"`), no `tailwind.config` file                                    |
 | Rendering    | **HTML5 Canvas 2D**        | All game entities, sprites (pixel grids), particles, screen overlays                                     |
-| Testing      | **Vitest 3**               | 209 tests across 8 test files — all passing                                                              |
+| Testing      | **Vitest 3**               | 244 tests across 13 test files — all passing                                                             |
 | Lint/format  | **ESLint + Prettier**      | `eslint-config-prettier`, react-hooks, react-refresh plugins                                             |
 | Git hooks    | **Husky + lint-staged**    | Pre-commit: prettier → tests                                                                             |
 
@@ -39,7 +39,6 @@ space-invaders/
 │   ├── App.tsx                 # Canvas mount, GameEngine lifecycle, UI state bridge
 │   ├── index.css               # Tailwind import + minimal body styles
 │   ├── components/             # DOM UI (not canvas)
-│   │   ├── HUD.tsx             # Score / high score / level / lives (hearts)
 │   │   ├── PowerUpBanner.tsx   # Rapid Fire / Shield countdowns
 │   │   └── ControlsHint.tsx    # Key legend
 │   └── game/                   # ALL gameplay logic (framework-free)
@@ -79,7 +78,7 @@ space-invaders/
 ## Key Characteristics
 
 - **~25 source files, ~2,900 lines of code** — small, readable, single-responsibility files
-- **Zero runtime dependencies beyond React** — the `@modelcontextprotocol/*` packages in `package.json` are unused legacy deps (see `package.json` dependencies block)
+- **Zero runtime dependencies beyond React** — unused legacy runtime dependencies were removed from `package.json`
 - **No backend**: everything is client-side; deploy `dist/index.html` anywhere
 - **Framework-free game core**: `src/game/` has no React imports — the engine talks to React through callbacks
 - **Full test coverage on pure logic**; canvas rendering and the game loop itself are exercised via mocked 2D context (see `engine.test.ts` pattern)

@@ -21,7 +21,7 @@ Component deep-dive: rendering-system.ts, ui-rendering.ts, rendering-math.ts, re
 
 **Test coverage:** **No dedicated test file** (canvas calls are hard to unit-test); the math was deliberately extracted to rendering-math.ts (55 tests) and sprite drawing to renderer-utils.ts. The death-flash skip-render contract ("will be removed in update", rendering-system.ts:117) is the kind of invariant that only engine tests cover loosely.
 
-**Observations:** Clean layering and heavy batching (stars are the standout). Minor smells: `POWER_UP_VISUALS` colors duplicate engine.ts's power-up particle colors; the glow color is built by string concat `glowColor + "1)"` producing e.g. `rgba(250, 204, 21, 1)` (rendering-system.ts:321-334) — fragile but works; `drawBullets` uses `fillStyle` strings derived at render time rather than constants.
+**Observations:** Clean layering and heavy batching (stars are the standout). Power-up visuals and pickup particles share the centralized `EFFECT_COLORS` palette. The glow color is built by string concat `glowColor + "1)"` producing e.g. `rgba(250, 204, 21, 1)` (rendering-system.ts:321-334) — fragile but works; `drawBullets` uses `fillStyle` strings derived at render time rather than constants.
 
 ## UIRenderingSystem (ui-rendering.ts, 254 lines)
 
@@ -35,9 +35,9 @@ Component deep-dive: rendering-system.ts, ui-rendering.ts, rendering-math.ts, re
 - `drawGameOver(ctx, score, now, screenOpenedAt)` (ui-rendering.ts:151) — overlay fades 0→0.75 over 400ms (`computeFadeInAlpha`); "GAME OVER" in ufo red; final score scales 1.3→1.0 over 300ms (`computeScaleUpAnimation`); blinking continue prompt.
 - `drawNameEntry(ctx, pendingName, score, now, screenOpenedAt)` (ui-rendering.ts:196) — fade to 0.85; "NEW HIGH SCORE!"; score; input box (30% width × 5% height); name + blinking caret (ui-rendering.ts:241-243); hint text.
 
-**Test coverage:** **None.** All pure math is covered in rendering-math.ts; the canvas layouts are untested.
+**Test coverage:** `rendering-system.test.ts` and `ui-rendering.test.ts` cover representative canvas drawing branches and state cleanup. Pure math remains covered in rendering-math.ts.
 
-**Observations:** Good separation — the only timings/animation inputs come from rendering-math. Hardcoded hex values here (title green `#4ade80`, medal colors, thrust `#facc15`) partially duplicate `COLORS` (ui-rendering.ts:74, 134-139). `drawMenu` and `drawGameOver` call `ctx.measureText`/`fillText` repeatedly per frame — trivial cost, not cached.
+**Observations:** Good separation — the only timings/animation inputs come from rendering-math. Title, medal, and thrust colors use the centralized `COLORS`/`EFFECT_COLORS` palettes. `drawMenu` and `drawGameOver` call `ctx.measureText`/`fillText` repeatedly per frame — trivial cost, not cached.
 
 ## rendering-math.ts (243 lines) — pure animation math
 
@@ -93,10 +93,10 @@ Side-effect-free helpers extracted from the renderers. All deterministic given i
 
 ## config.ts (356 lines)
 
-Single source of truth. Notable values: canvas 800×640, `targetDt` 16.67ms, `maxDt` 100ms, groundY 600; shields 24×16 @ 3px, y 480; player 27×21 @ speed 5, cooldown 333ms / rapidFire 120ms; alien step 8 / drop 20, spriteScale 3; UFO y 35, speed 2.5, timer 10-25s, points [50,100,150,300]; power-up duration 8000ms, spawn chance 0.1, fall 2; particle cap 500; death durations alien/UFO 150ms, player 300ms; hit invulnerability 2000ms; level announce 2000ms. `GAME_CONFIG` is `as const` (deeply readonly), `SPRITES`/`SPRITES_2` hold the pixel-art string matrices, `STAR_LAYERS` drives the starfield, `COLORS` is a `satisfies Colors` interface. **Test coverage:** exercised by every other suite via config imports; no dedicated config tests.
+Single source of truth. Notable values: canvas 800×640, `targetDt` 16.67ms, `maxDt` 50ms, groundY 600; shields 24×16 @ 3px, y 480; player 27×21 @ speed 5, cooldown 333ms / rapidFire 120ms; alien step 8 / drop 20, spriteScale 3; UFO y 35, speed 2.5, timer 10-25s, points [50,100,150,300]; power-up duration 8000ms, spawn chance 0.1, fall 2; particle cap 500; death durations alien/UFO 150ms, player 300ms; hit invulnerability 2000ms; level announce 2000ms. `GAME_CONFIG` is `as const` (deeply readonly), `SPRITES`/`SPRITES_2` hold the pixel-art string matrices, `STAR_LAYERS` drives the starfield, `COLORS` is a `satisfies Colors` interface. **Test coverage:** exercised by every other suite via config imports; no dedicated config tests.
 
 ## Cross-cutting observations
 
-- Test totals: **209 tests / 8 files, all passing** (`npm test`). Coverage is concentrated in pure logic (rendering-math 55, physics 33, entity-factory 26); the three renderers, bullet-collision-handler, and death-animation-handler have no direct tests — the main coverage gap, mitigated by the math extraction pattern.
+- Test totals: **244 tests / 13 files, all passing** (`npm test`). Coverage is concentrated in pure logic (rendering-math 55, physics 33, entity-factory 26), with direct rendering-system, UI-rendering, and supporting component coverage now added.
 - Rendering design favors O(1) batching (stars) and minimal state (globalAlpha resets) over per-entity save/restore — a consistent, low-risk pattern.
 - String-concatenated colors and duplicated color constants are the most common smell; a single `COLORS`-keyed palette or a shared `POWER_UP_VISUALS` module would remove it.

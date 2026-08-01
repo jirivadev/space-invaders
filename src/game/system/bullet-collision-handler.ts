@@ -1,5 +1,5 @@
 import type { GameState, Bullet } from "../types";
-import { GAME_CONFIG } from "../config";
+import { GAME_CONFIG, EFFECT_COLORS } from "../config";
 import type { CollisionSystem } from "./collision-system";
 import type { PhysicsSystem } from "./physics-system";
 import { createExplosionParticles, createImpactFlash } from "./entity-factory";
@@ -18,7 +18,8 @@ export interface BulletCollisionDependencies {
  */
 export function handleBulletCollisions(
   g: GameState,
-  { collisionSystem, physicsSystem }: BulletCollisionDependencies
+  { collisionSystem, physicsSystem }: BulletCollisionDependencies,
+  now: number
 ): void {
   for (let i = g.bullets.length - 1; i >= 0; i--) {
     const bullet = g.bullets[i];
@@ -30,13 +31,21 @@ export function handleBulletCollisions(
           i,
           bullet,
           collisionSystem,
-          physicsSystem
+          physicsSystem,
+          now
         )
       )
         continue;
     } else {
       if (
-        handleAlienBulletCollision(g, i, bullet, collisionSystem, physicsSystem)
+        handleAlienBulletCollision(
+          g,
+          i,
+          bullet,
+          collisionSystem,
+          physicsSystem,
+          now
+        )
       )
         continue;
     }
@@ -48,7 +57,8 @@ function handlePlayerBulletCollisions(
   i: number,
   bullet: Bullet,
   collisionSystem: CollisionSystem,
-  physicsSystem: PhysicsSystem
+  physicsSystem: PhysicsSystem,
+  now: number
 ): boolean {
   // Check shield damage — a shield hit consumes the bullet; the alien/UFO
   // checks below must never run with this (now removed) bullet reference,
@@ -65,13 +75,13 @@ function handlePlayerBulletCollisions(
 
   // Check alien collision
   for (const a of g.aliens) {
-    if (collisionSystem.checkBulletAlienCollision(bullet, a, g)) {
+    if (collisionSystem.checkBulletAlienCollision(bullet, a, g, now)) {
       physicsSystem.triggerShake(4, 130);
       g.particles.push(
         createImpactFlash(
           bullet.x + bullet.w / 2,
           bullet.y + bullet.h / 2,
-          "#fef08a",
+          EFFECT_COLORS.impactAlien,
           12
         )
       );
@@ -81,7 +91,7 @@ function handlePlayerBulletCollisions(
   }
 
   // Check UFO collision
-  if (g.ufo && collisionSystem.checkBulletUFOCollision(bullet, g.ufo, g)) {
+  if (g.ufo && collisionSystem.checkBulletUFOCollision(bullet, g.ufo, g, now)) {
     swapRemove(g.bullets, i);
     return true;
   }
@@ -94,7 +104,8 @@ function handleAlienBulletCollision(
   i: number,
   bullet: Bullet,
   collisionSystem: CollisionSystem,
-  physicsSystem: PhysicsSystem
+  physicsSystem: PhysicsSystem,
+  now: number
 ): boolean {
   if (!collisionSystem.checkBulletPlayerCollision(bullet, g.player))
     return false;
@@ -104,7 +115,7 @@ function handleAlienBulletCollision(
       ...createExplosionParticles(
         bullet.x + bullet.w / 2,
         bullet.y + bullet.h / 2,
-        "#3b82f6",
+        EFFECT_COLORS.shieldAura,
         8
       )
     );
@@ -112,7 +123,7 @@ function handleAlienBulletCollision(
       createImpactFlash(
         bullet.x + bullet.w / 2,
         bullet.y + bullet.h / 2,
-        "#93c5fd",
+        EFFECT_COLORS.impactShieldAbsorb,
         10
       )
     );
@@ -127,13 +138,13 @@ function handleAlienBulletCollision(
 
   if (g.lives <= 0) {
     physicsSystem.triggerShake(8, 250);
-    g.player.diedAt = performance.now();
+    g.player.diedAt = now;
   } else {
     g.particles.push(
       ...createExplosionParticles(
         g.player.x + g.player.w / 2,
         g.player.y + g.player.h / 2,
-        "#67e8f9",
+        EFFECT_COLORS.playerExplosion,
         50
       )
     );
@@ -141,7 +152,7 @@ function handleAlienBulletCollision(
       createImpactFlash(
         bullet.x + bullet.w / 2,
         bullet.y + bullet.h / 2,
-        "#fca5a5",
+        EFFECT_COLORS.impactPlayer,
         14
       )
     );

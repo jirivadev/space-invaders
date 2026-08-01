@@ -59,10 +59,7 @@ export class LevelSystem {
     // Wait for any in-flight death animation to finish (dyingAt > 0). Otherwise
     // replacing g.aliens here would discard the last alien's pendingScore and
     // explosion — the final kill of a level never paid out (regression T-1).
-    if (
-      g.aliveAliens.length === 0 &&
-      !g.aliens.some((a) => a.dyingAt > 0)
-    ) {
+    if (g.aliveAliens.length === 0 && !g.aliens.some((a) => a.dyingAt > 0)) {
       g.level++;
       g.levelAnnounceTimer = GAME_CONFIG.gameplay.levelAnnounceDuration;
       const config = getLevelConfig(g.level);
@@ -131,10 +128,10 @@ export class LevelSystem {
   }
 
   // Check for alien reaching player
-  checkAlienReachedPlayer(g: GameState): void {
+  checkAlienReachedPlayer(g: GameState, now: number): void {
     for (const a of g.aliveAliens) {
       if (a.y + a.h >= GAME_CONFIG.canvas.groundY) {
-        setGameOver(g);
+        setGameOver(g, now);
         break;
       }
     }
@@ -173,6 +170,7 @@ export class LevelSystem {
       g.bullets.push({
         x: alienBulletX,
         y: alienBulletY,
+        previousY: alienBulletY,
         w: GAME_CONFIG.bullet.alienWidth,
         h: GAME_CONFIG.bullet.alienHeight,
         dy: levelConfig.enemyBulletSpeed + Math.random() * 2,

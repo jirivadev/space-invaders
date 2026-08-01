@@ -11,11 +11,11 @@ npm install          # Node 18+ recommended
 npm run dev          # Vite dev server → http://localhost:5173
 npm run build        # tsc typecheck + vite build → dist/index.html (single file)
 npm run preview      # serve the production build
-npm test             # vitest run — 209 tests / 8 files
+npm test             # vitest run — 244 tests / 13 files
 npx vitest           # watch mode
 ```
 
-**Note on pre-commit**: currently only Prettier runs via `lint-staged` (and no husky hook is actually installed — see T-6). **Do not assume tests run on commit** — run `npm test` yourself.
+**Note on pre-commit**: Husky runs `lint-staged`, which formats staged files and runs related Vitest tests for staged TypeScript files. Run `npm test` for the full suite.
 
 ## 2. Mental Model (5 bullets)
 
@@ -40,7 +40,7 @@ npx vitest           # watch mode
 | Score/high-score/leaderboard persistence         | `src/game/system/state-manager.ts` + `leaderboard.ts`                 |
 | How entities look on canvas                      | `src/game/system/rendering-system.ts` + `renderer-utils.ts`           |
 | Menu / game-over / name-entry screens            | `src/game/system/ui-rendering.ts` + `rendering-math.ts`               |
-| React shell / HUD layout                         | `src/App.tsx`, `src/components/*`                                     |
+| React shell / supporting UI                      | `src/App.tsx`, `src/components/*`                                     |
 | Frame pipeline order                             | `src/game/engine.ts` (`_update`)                                      |
 | New entity/state fields                          | `src/game/types.ts` → factory → system → renderer                     |
 
@@ -63,22 +63,22 @@ Example: _add a new alien type._
 
 ## 6. Testing Conventions
 
-- **Location**: colocated `*.test.ts` beside sources (8 files, 209 tests).
+- **Location**: colocated `*.test.ts` beside sources (13 files, 244 tests).
 - **Patterns** (see `engine.test.ts` for the canonical setup):
   - `localStorage` → `vi.stubGlobal("localStorage", {...})` with an in-memory store; `vi.unstubAllGlobals()` in `afterEach`.
   - Game loop → stub `requestAnimationFrame`/`cancelAnimationFrame`, capture the callback, invoke `_frame()` manually.
   - Canvas → stub `window` + a minimal mock 2D context (`fillRect`, `measureText`, etc. as `vi.fn()`).
   - State → `createMockState({...})` / `makeBullet()` etc. from `src/game/test-utils/factory.ts`.
 - **Run one file**: `npx vitest src/game/system/level-system.test.ts`. Watch: `npx vitest`.
-- ⚠️ **Coverage gaps** (T-8): `bullet-collision-handler.ts`, `death-animation-handler.ts`, `rendering-system.ts`, `ui-rendering.ts` and all `src/components/*` have **no direct tests**. New logic in those files should come with tests.
+- **Coverage**: T-8 rendering-system, ui-rendering, ControlsHint, and PowerUpBanner tests are covered directly; add focused tests for new branches as needed.
 
 ## 7. Common Gotchas
 
 - **`verbatimModuleSyntax` is on** — type-only imports must use `import type { ... }`. Runtime imports of types fail the build.
 - **Sprite rows must be equal width** — uneven rows silently misrender (no error). There's a test for `SPRITES.player` only.
 - **`swapRemove` reorders arrays** — never rely on element order after removal; don't keep stale references to removed entities (this is the root of T-2).
-- **Alien caches are refreshed per frame** (`refreshAlienCaches`) — if you mutate `aliens` mid-frame, `aliveAliens`/`activeAliens` are stale until the next refresh. Mind frame order in `engine._update` (T-1 exists because of this).
-- **`performance.now()` vs injected `now`** — the engine computes `now` once and passes it to `processDeathAnimations`; collision code re-queries the clock directly. Prefer threading `now` for testability (T-7).
+- **Alien caches are refreshed per frame** (`refreshAlienCaches`) — if you mutate `aliens` mid-frame, `aliveAliens`/`activeAliens` are stale until the next refresh. `checkLevelComplete` waits for active death animations before replacing a formation.
+- **Injected frame time** — the engine computes `now` once per update and threads it through gameplay timing paths, so tests can inject deterministic timestamps (T-7).
 - **StrictMode double-mounts effects in dev** — the `App.tsx` effect is written correctly (create + `start()`, cleanup + `stop()`); if you add `window` listeners anywhere, bind handler references once in the constructor so add/removeEventListener match.
 - **Single-file build** — `vite-plugin-singlefile` inlines everything; `cssCodeSplit: false`. No code-splitting, no external assets in prod.
 - **Tailwind v4** — no `tailwind.config`; styles come from `@import "tailwindcss"` in `index.css`. Add utilities inline, not via config.
@@ -94,7 +94,7 @@ Example: _add a new alien type._
 ## 9. Quality Bar (before committing)
 
 1. `npm run build` — zero type errors (strict mode).
-2. `npm test` — all 209 pass; add tests for new/changed logic.
+2. `npm test` — all 244 pass; add tests for new/changed logic.
 3. `npx prettier --write <files>` (this is what the pre-commit hook would do).
 4. No dead code — remove anything your change orphans (imports, exports, files). There was a prior cleanup pass removing exactly this.
 5. Magic numbers → `GAME_CONFIG`; new colors → `COLORS`; new math → `rendering-math.ts` as a pure `compute*` function.

@@ -47,7 +47,8 @@ export function resetHighScoreCache(): void {
 export function createInitialState(
   score: number = 0,
   lives: number = 3,
-  status: GameStatus = "menu"
+  status: GameStatus = "menu",
+  now: number
 ): GameState {
   const initialAliens = createAliens(
     getLevelConfig(1).formation,
@@ -96,7 +97,7 @@ export function createInitialState(
     lastTime: 0,
     initialized: false,
     leaderboardCache: getLeaderboard(),
-    screenOpenedAt: performance.now(),
+    screenOpenedAt: now,
   };
 }
 
@@ -105,11 +106,11 @@ export function setPlaying(g: GameState): void {
   g.levelAnnounceTimer = 0;
 }
 
-export function setMenu(g: GameState): void {
+export function setMenu(g: GameState, now: number): void {
   g.status = "menu";
   g.levelAnnounceTimer = 0;
   g.ufo = null;
-  g.screenOpenedAt = performance.now();
+  g.screenOpenedAt = now;
 }
 
 export function refreshAlienCaches(g: GameState): void {
@@ -117,9 +118,13 @@ export function refreshAlienCaches(g: GameState): void {
   g.activeAliens = g.aliens.filter((a) => a.alive);
 }
 
-export function setGameOver(g: GameState, saveHighScore: boolean = true) {
+export function setGameOver(
+  g: GameState,
+  now: number,
+  saveHighScore: boolean = true
+) {
   if (g.status !== "playing") return;
-  g.screenOpenedAt = performance.now();
+  g.screenOpenedAt = now;
   const isNewHighScore = saveHighScore && g.score > g.highScore;
   if (isNewHighScore) {
     g.highScore = g.score;

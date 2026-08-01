@@ -57,6 +57,7 @@ export function makeBullet(overrides: Partial<Bullet> = {}): Bullet {
   return {
     x: 100,
     y: 200,
+    previousY: overrides.previousY ?? overrides.y ?? 200,
     w: 4,
     h: 12,
     dy: -9,

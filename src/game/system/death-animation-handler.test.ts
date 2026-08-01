@@ -138,8 +138,6 @@ describe("processDeathAnimations", () => {
     beforeEach(() => {
       mock = makeMockStorage();
       vi.stubGlobal("localStorage", mock.api);
-      // setGameOver stamps screenOpenedAt from performance.now()
-      vi.spyOn(performance, "now").mockReturnValue(1000);
     });
 
     afterEach(() => {
@@ -174,7 +172,7 @@ describe("processDeathAnimations", () => {
 
       expect(g.player.diedAt).toBe(0);
       expect(g.status).toBe("gameover");
-      expect(g.screenOpenedAt).toBe(1000); // stamped by setGameOver
+      expect(g.screenOpenedAt).toBe(1000 + duration + 1); // stamped by setGameOver with the threaded `now`
       // 50 explosion particles + explosion flash + impact flash = 52
       expect(g.particles).toHaveLength(EXPLOSION_50 + 1);
     });
