@@ -11,20 +11,13 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "@modelcontextprotocol/server-filesystem": "^2026.7.10",
-    "@types/node": "^26.1.2",
-    "brace-expansion": "^5.0.9",
-    "diff": "^9.0.0",
-    "glob": "^13.0.6",
-    "minimatch": "^10.2.6",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "zod": "^4.4.3"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.1.8",
+    "@types/node": "^26.1.2",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
