@@ -81,6 +81,23 @@ describe("LevelSystem", () => {
       expect(g.ufoTimer).toBe(2000);
       expect(g.levelAnnounceTimer).toBe(2000);
     });
+
+    // Regression T-1: the last alien of a level is dropped from aliveAliens the
+    // moment it starts dying, but its score is only paid out when the death
+    // animation completes. Level completion must wait for that payout, or the
+    // final kill of every level awards 0 points.
+    it("does not complete the level while an alien is still dying", () => {
+      const aliens = [makeAlien({ alive: true, dyingAt: 500, pendingScore: 30 })];
+      const g = createMockState({
+        level: 1,
+        aliens,
+        aliveAliens: [], // cache already dropped the dying alien
+        activeAliens: aliens,
+      });
+      const result = system.checkLevelComplete(g);
+      expect(result).toBe(false);
+      expect(g.level).toBe(1);
+    });
   });
 
   describe("checkAlienReachedPlayer", () => {

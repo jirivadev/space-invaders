@@ -420,6 +420,65 @@ describe("GameEngine smoke", () => {
     engine.stop();
   });
 
+  it("regression T-1: final alien's score is awarded before the level completes", () => {
+    // Control the clock so the 150ms death animation can elapse deterministically
+    let now = 1000;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+
+    const onUIChange = vi.fn();
+    const engine = new GameEngine(canvas, { onUIChange });
+    engine.start();
+    engine.setStatus("playing");
+
+    const engineAny = engine as unknown as {
+      _frame(): void;
+      g: {
+        score: number;
+        level: number;
+        aliens: {
+          alive: boolean;
+          dyingAt: number;
+          pendingScore?: number;
+          x: number;
+          y: number;
+          w: number;
+          h: number;
+          type: "squid";
+        }[];
+      };
+    };
+
+    // Last alien killed 200ms ago (death animation over, score unpaid).
+    // aliveAliens is empty — only the dying alien remains in g.aliens.
+    engineAny.g.aliens = [
+      {
+        alive: true,
+        dyingAt: 800,
+        pendingScore: 30,
+        x: 0,
+        y: 0,
+        w: 1,
+        h: 1,
+        type: "squid",
+      },
+    ];
+
+    // Frame 1: death pipeline pays the pending score; level must NOT complete
+    // while the alien is still dying.
+    engineAny._frame();
+    expect(engineAny.g.score).toBe(30);
+    expect(engineAny.g.level).toBe(1);
+
+    // Frame 2: death fully resolved -> level completes, score retained.
+    now = 1016;
+    engineAny._frame();
+    expect(engineAny.g.level).toBe(2);
+    expect(engineAny.g.score).toBe(30);
+
+    engine.stop();
+    vi.restoreAllMocks();
+  });
+
   it("_handleStateTransitions is reachable via status changes", () => {
     const onUIChange = vi.fn();
     const engine = new GameEngine(canvas, { onUIChange });

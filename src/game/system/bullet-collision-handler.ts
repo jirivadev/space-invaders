@@ -50,15 +50,18 @@ function handlePlayerBulletCollisions(
   collisionSystem: CollisionSystem,
   physicsSystem: PhysicsSystem
 ): boolean {
-  // Check shield damage
+  // Check shield damage — a shield hit consumes the bullet; the alien/UFO
+  // checks below must never run with this (now removed) bullet reference,
+  // otherwise swapRemove may have moved another bullet into slot i and the
+  // stale reference could phantom-kill aliens or delete an already-processed
+  // bullet (regression T-2).
   for (const s of g.shields) {
     if (collisionSystem.checkPlayerBulletShield(bullet, s, g)) {
       physicsSystem.triggerShake(2, 65);
       swapRemove(g.bullets, i);
-      break;
+      return true;
     }
   }
-  if (!g.bullets[i]) return true;
 
   // Check alien collision
   for (const a of g.aliens) {
