@@ -144,7 +144,7 @@ All tuning is centralized. `GAME_CONFIG` sections:
 - High score is read once into a module cache (`state-manager.ts` `_cachedHighScore`); written only when beaten in `setGameOver`. Single-tab game → cache staleness is acceptable.
 - All storage access is try/catch-wrapped — private browsing / quota failures degrade silently.
 
-## 9. Known Issues & Gotchas (summary)
+## 9. Resolved Issues & Gotchas (summary)
 
 | ID   | Issue                                                          | Impact   |
 | ---- | -------------------------------------------------------------- | -------- |

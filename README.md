@@ -15,11 +15,11 @@ A browser-based Space Invaders clone built with **React**, **TypeScript**, and t
 
 ## Controls
 
-| Action | Keys |
-|--------|------|
-| Move left | `←` or `A` |
-| Move right | `→` or `D` |
-| Shoot | `SPACE` |
+| Action     | Keys           |
+| ---------- | -------------- |
+| Move left  | `←` or `A`     |
+| Move right | `→` or `D`     |
+| Shoot      | `SPACE`        |
 | Enter name | Type + `Enter` |
 
 ## Getting Started
@@ -84,20 +84,23 @@ src/
 │   ├── leaderboard.ts    # localStorage-backed leaderboard
 │   ├── test-utils/factory.ts  # createMockState, makeBullet, etc.
 │   └── system/          # Game systems (one class each)
+│       ├── bullet-collision-handler.ts
 │       ├── collision-system.ts
+│       ├── death-animation-handler.ts
 │       ├── entity-factory.ts
 │       ├── input-handler.ts
 │       ├── level-system.ts
 │       ├── physics-system.ts
 │       ├── rendering-system.ts
-│       └── state-manager.ts
+│       ├── state-manager.ts
+│       └── ui-rendering.ts
 ```
 
 ## Architecture
 
 - **GameState is a single mutable object** mutated in-place by all systems. No immutability pattern — `engine._update()` calls systems in order.
 - **Pure math functions** (`rendering-math.ts`, `geometry.ts`) have no side effects and no Canvas dependency — easy to unit test.
-- **Canvas rendering** (`rendering-system.ts`) is pure display; all logic decisions happen in `_update()` before `_draw()`.
+- **Canvas rendering** (`rendering-system.ts`, `ui-rendering.ts`) is pure display; all logic decisions happen in `_update()` before `_draw()`.
 - **Tests mock browser APIs**: localStorage, requestAnimationFrame, and a minimal Canvas 2D context. See `engine.test.ts` for the pattern.
 - **Leaderboard** uses `localStorage` with a single `JSON` blob per key. `addToLeaderboard` updates existing names rather than creating duplicate entries.
 - **Sprite patterns** are 2D character arrays in `config.ts`. Each row must be the same width — uneven rows silently misrender.
@@ -108,7 +111,7 @@ src/
 - **Tailwind v4** via `@tailwindcss/vite` plugin — no `tailwind.config`. Import `@import "tailwindcss"` in CSS.
 - **TypeScript**: `verbatimModuleSyntax` is on — use `import type` for type-only imports.
 - **No API endpoints** — purely client-side.
-- **No unit test runner config file** — Vitest uses `vite.config.ts`.
+- **Vitest configuration** lives in `vite.config.ts` and explicitly includes `src/**/*.test.ts`.
 
 ## License
 

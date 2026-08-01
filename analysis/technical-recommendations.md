@@ -97,15 +97,11 @@ The explicit config documents the testing surface and `npm test` remains green (
 
 ---
 
-## Suggested Fix Order (if implementing)
+## Implementation Status
 
-1. **R-3** (deps) + **R-2** (stale bullet) — 30 min, isolated, low risk.
-2. **R-1** (level-clear score) + regression tests — 30 min; highest player-facing value.
-3. **R-6** (tests for the two handler modules) — locks in R-1/R-2.
-4. **R-5** (hook) + **R-4** (maxDt) — 15 min each.
-5. **R-7 / R-8 / R-9 / R-10** — complete.
-
-After each step: `npm run build && npm test`.
+All recommendations in this roadmap are implemented and resolved. The current
+verification baseline is `npm run build` plus `npm test` (244 tests across 13
+files). Re-run both commands after future gameplay or tooling changes.
 
 ---
 

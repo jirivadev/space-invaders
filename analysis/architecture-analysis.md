@@ -118,11 +118,11 @@ App.tsx (cleanup)
 7. **Formation-based levels**: 5 named formations cycle after level 4 with clamped scaling formulas
 8. **Sprite rows must be equal width** — uneven rows silently misrender (README warning; `engine.test.ts` asserts player sprite consistency)
 
-## 9. Potential Concerns (Phase 2 candidates)
+## 9. Verified Concerns and Resolutions
 
 - **Canvas HUD is the single source of truth** — the former duplicate React stats HUD was removed (T-4 resolved)
 - **React StrictMode double-mount** — effect creates/destroys engine twice in dev; works, but worth confirming no listener leaks
 - **Dependency hygiene resolved** — unused legacy runtime dependencies were removed; `@types/node` is a dev dependency.
 - **Single `keys` object grows** with any pressed key; cleared on blur (already handled)
 - **Consistent frame timing** — the engine's per-frame `now` is threaded through collision, death, and state-transition paths.
-- **No collision with `dt` substeps** — bullets can tunnel through thin objects at high `dt` (mitigated by `maxDt` clamp)
+- **Swept bullet collision** — bullets now test the path from `previousY` to their current position, preventing tunneling through thin objects at high `dt`; `maxDt` remains a frame-time safeguard.

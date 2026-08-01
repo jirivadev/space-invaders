@@ -37,7 +37,7 @@
 
 - ✅ `npm run build` — typecheck (tsc) + Vite bundle succeeds
 - ✅ `npm test` — **244 tests / 13 files, all passing**
-- ✅ Test files: `rendering-math.test.ts` (55), `physics-system.test.ts` (33), `entity-factory.test.ts` (26), `input-handler.test.ts` (23), `engine.test.ts` (22), `collision-system.test.ts` (19), `state-manager.test.ts` (18), `level-system.test.ts` (15), `bullet-collision-handler.test.ts` (11), `death-animation-handler.test.ts` (10)
+- ✅ Test files: `rendering-math.test.ts` (55), `physics-system.test.ts` (33), `entity-factory.test.ts` (26), `input-handler.test.ts` (23), `collision-system.test.ts` (23), `engine.test.ts` (22), `state-manager.test.ts` (18), `level-system.test.ts` (15), `bullet-collision-handler.test.ts` (11), `death-animation-handler.test.ts` (10), `ui-rendering.test.ts` (3), `rendering-system.test.ts` (3), `components.test.ts` (2)
 
 ## Completed Phases
 
@@ -91,7 +91,7 @@
 - Deferred death scoring via `dyingAt` timestamps
 - localStorage fully try/catch wrapped; leaderboard dedupes by name
 
-**Potential concerns flagged (Phase 2 candidates):**
+**Resolved findings:**
 
 1. Canvas HUD (`ui-rendering.drawHUD`) is the single source of truth; the duplicate React DOM HUD was removed (T-4 resolved)
 2. React StrictMode double-mount — engine create/destroy twice in dev (works, verify no leaks)
@@ -113,7 +113,9 @@ analysis/
 │   ├── handlers-and-factory.md
 │   └── rendering-and-support.md
 ├── codebase-analysis-progress.md # ✅ THIS FILE
-└── (Phase 3 files go here: comprehensive-codebase-guide.md, technical-recommendations.md, developer-onboarding-guide.md)
+├── comprehensive-codebase-guide.md # ✅ Phase 3
+├── technical-recommendations.md    # ✅ Phase 3
+└── developer-onboarding-guide.md   # ✅ Phase 3
 ```
 
 Related (pre-existing, do NOT confuse):
